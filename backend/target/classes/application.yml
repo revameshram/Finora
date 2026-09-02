@@ -1,0 +1,41 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: finora-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:finoradb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    driverClassName: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  jpa:
+    database-platform: ${SPRING_JPA_DATABASE_PLATFORM:org.hibernate.dialect.H2Dialect}
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+finora:
+  jwt:
+    secret: ${FINORA_JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    expiration-ms: ${FINORA_JWT_EXPIRATION_MS:86400000} # 24 hours default
+  supabase:
+    url: ${SUPABASE_URL:}
+    anon-key: ${SUPABASE_ANON_KEY:}
+    service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}

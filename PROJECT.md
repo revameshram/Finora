@@ -1,0 +1,177 @@
+# Finora — Project Tracker
+
+> Living doc. Update this alongside every merged module/feature — this is the source of truth for "what's actually done" vs. the Master Reference (UX/data-model spec) and Team Build Plan (who/when).
+
+**Last updated:** 2026-09-01
+**Owners:** Alok (Track B) · Reva (Track A)
+
+---
+
+## 1. Overview
+
+Finora is a personal finance suite reverse-engineered from Westro, built as two independent developer tracks (see Team Build Plan). 8 modules total, split by data-dependency direction, not feature count.
+
+---
+
+## 2. Tech Stack
+
+| Layer | Choice |
+|---|---|
+| Backend | Spring Boot 3.x |
+| Frontend | React 18 + TypeScript + Vite |
+| Styling | Tailwind CSS |
+| Database / Auth | PostgreSQL / Supabase, JWT auth |
+| Package convention | `com.finora.<module>.*` |
+
+*(Adjust here if any of these shift during build — this table should always reflect what's actually in the repo, not the plan.)*
+
+---
+
+## 3. Phase 0 — Shared Foundation
+
+Owner: Alok (doing all Phase 0 init work solo — see §7).
+
+| Item | Status | Notes |
+|---|---|---|
+| Repo/project scaffolding | Done | Monorepo layout with Spring Boot 3.3.4 (Java 21) & React 18/TS/Vite/Tailwind, module packages/folders created |
+| Auth/JWT (issuance + validation) | Done | Decoupled issuance (`com.finora.common.auth`) + stateless JWT validation filter + seeded dummy users |
+| Shared Profile/Workspace table | Done | `user_profiles` table/JPA entity + Supabase/Postgres & H2 migration schema |
+| Currency service (baseCurrency + display conversion) | Done | Live API rates (`open.er-api.com`), 1h TTL cache, single baseCurrency (INR) DB storage, two-way conversion & rich frontend metadata |
+| Universal linking mechanism (`isIncluded`/`isLinked`/`sourceModule`) | Done | Base `@MappedSuperclass LinkableEntity`, `Linkable` interface, `LinkingService`, frontend `LinkedBadge` & `IncludeToggle`, Delink semantics resolved |
+| Shared frontend components (toast, insights-card, empty-state, onboarding-drawer) | Done | Toast notification system (`useToast`), `InsightsCard` (4 themes + metrics), `EmptyState`, `OnboardingDrawer` (steps + checklist) |
+| Expense Tracker Summary API contract (spec/mock) | Done | OpenAPI 3.0 YAML spec + `ExpenseContractMockController` (`/api/v1/expenses/summary` & `/api/v1/expenses/goal-linked`) |
+| Net Worth Liabilities/Assets API contract (spec/mock) | Done | OpenAPI 3.0 YAML spec + `NetWorthContractMockController` (`GET/POST /api/v1/networth/liabilities`) |
+
+---
+
+## 4. Module Status
+
+### Track A — Wealth & Growth (Reva)
+
+| Module | Status | Depends On | Notes |
+|---|---|---|---|
+| Portfolio Tracker | Not started | — | Ships first; Net Worth needs it as linkable source |
+| Net Worth Tracker | Not started | Portfolio Tracker | Owns shared growth engine (compound growth + FV-of-annuity) |
+| Goal Manager | Not started | Net Worth, Portfolio, Expense Tracker (mocked) | |
+| FIRE Planner | Not started | Net Worth, Portfolio, Expense Tracker (mocked) | Reuses growth engine from Net Worth Tracker |
+
+### Track B — Cash Flow & Life Admin (Alok)
+
+| Module | Status | Depends On | Notes |
+|---|---|---|---|
+| Expense Tracker | Done | — | Cash-flow backbone + DB-backed Summary API contract fulfilled |
+| Vault | Done | — | Zero-knowledge client-side encryption + timed reveal + bot-throttled unlock gate |
+| Trip Manager | Done | — | Fully self-contained multi-currency travel planner & group ledger |
+| EMI Manager | Not started | Net Worth Tracker (liabilities, mocked), Expense Tracker (internal) | Scope from first principles — not yet detailed in Master Reference |
+
+### Joint
+
+| Item | Status | Notes |
+|---|---|---|
+| Suite-Wide Insights tab | Not started | Financial Health Overview, cross-module Key Metrics, Trends & Analysis, Insights & Recommendations feed |
+
+---
+
+## 5. Feature-Level Detail
+
+### Expense Tracker
+**Status:** Done
+**Implemented:**
+- [x] Budget Month scoping (`YYYY-MM`) with month navigation toolbar
+- [x] "Copy Month" bulk duplication utility (replicates recurring income, transactions as Pending, and tasks as TODO)
+- [x] Income Sources ledger (Name, Amount in base INR, Payment Instrument, CRUD APIs)
+- [x] Transactions ledger with 17 categories, Amount in base INR, Payment method, Payment date, and search/category filters
+- [x] State Machine: `Pending` vs. `Done` settlement toggling (affects Cash Flow vs Net Position metrics)
+- [x] Calculation rollup `isIncluded` toggle (allows keeping transactions without inflating totals)
+- [x] Goal Manager linking (`linkedGoalId` / GoalTag reporting association without balance alteration)
+- [x] Monthly Checklist Tasks (TODO, IN_PROGRESS, DONE)
+- [x] Monthly Notes (freeform, timestamped, append-only log)
+- [x] Summary Tab with interactive Category Breakdown Donut + Settlement Status Donut
+- [x] Financial Insights Panel (Health Score 0–100, Savings Rate, Expense Ratio, Pending Drag, 6-Month Emergency Fund Target, Cash Flow Velocity, and Advisory cards)
+- [x] Real Database-Backed Cross-Track Summary API Contract (`GET /api/v1/expenses/summary` and `GET /api/v1/expenses/goal-linked`)
+
+### Vault
+**Status:** Done
+**Implemented:**
+- [x] Zero-knowledge client-side encryption (`WebCrypto PBKDF2-SHA256` 100k rounds + `AES-GCM-256` with 96-bit random IV)
+- [x] Dedicated first-run Vault Master Password setup with verifier hashing (password never transmitted/stored in retrievable format)
+- [x] Exactly 3 one-time emergency backup recovery codes (#01, #02, #03) issued once at setup
+- [x] Two-factor Unlock Gate with master password verifier + embedded dynamic visual SVG CAPTCHA challenge (Option 1 bot-throttling)
+- [x] Account rate-limiting & 15-minute lock after 5 consecutive failed unlock attempts
+- [x] Session-based lock state with in-memory key purge on lock/reload
+- [x] Biometric Unlock & Device Protection optional toggles (§16.8)
+- [x] One-time backup code redemption recovery flow to re-key forgotten master passwords
+- [x] Secure Note Create / Edit with client-side encryption and 8 category tags (`Finance`, `Official`, `Personal`, `Work`, `Social`, `Banking`, `Medical`, `Custom`)
+- [x] Timed auto-hide Secret Value reveal modal with 30-second countdown, visual progress bar, manual hide, and one-click copy (§16.10)
+- [x] Client-side search scoped to note labels and descriptions
+- [x] Reused shared `EmptyState` and `OnboardingDrawer` components with custom Vault usage tips
+
+### Trip Manager
+**Status:** Done
+**Implemented:**
+- [x] Trip Creation: Manual lightweight form + AI-assisted "Trip Planner Pro" 2-pane itinerary generator with destination, dates, budget tier, and preview
+- [x] 1-Click "Try with Sample Data" seeder (§16.14 8-day Vietnam fixture with ₹4,50,000 budget and ₹3,26,150 spend across 8 travelers)
+- [x] 5-Tab Trip Structure: Overview, Plan, Money (4 sub-tabs), Pack & Prep, Checklist
+- [x] Overview Tab: 4 deep-link shortcut tiles (Next on Plan, Budget Status, Open Checklist, Luggage) + Participant management with single-level family/dependent nesting (`parentParticipantId`)
+- [x] Plan Tab: Day-by-day chronological itinerary timeline, category badges (Flight, Hotel, Activity, Food, Transit, Sightseeing), estimated costs, assigned traveler badges, rich descriptions, and route map waypoints preview
+- [x] Money Tab persistent header: Real-time spend meter, ₹ budget left, % used, progress bar
+- [x] Money Sub-Tab 1 (Budget): Overall budget cap editor, 7 fixed travel category budgets, collapsible Budget vs Plan table, and 3 summary cards (Projected Reality, Spending Status, Market Allocations)
+- [x] Money Sub-Tab 2 (Expenses): 4-tab Add Expense modal (Basic, Splits, Pay, Notes), multi-currency ingress (USD, EUR, VND, AED converted to base INR), and Smart Split Solver (By-Shares and By-Percentage modes)
+- [x] Money Sub-Tab 3 (Settle): Participant net balances matrix (Paid vs Share $\rightarrow$ Net Balance) + 1-click suggested minimal debt transfers with settlement payment recorder
+- [x] Money Sub-Tab 4 (Insights): Spending breakdown toggle (Categories vs Travelers), Highlights & Advisory card, and collapsible Full Analysis (Spending Velocity ₹/day projection, Cost Efficiency metrics, Payment Coverage)
+- [x] Safeguard all percentage and velocity calculations against $N/0$ divide-by-zero on trips with zero budget set (§16.2 / §16.12)
+- [x] Pack & Prep Tab: Quick-Add templates (`Basic Essentials`, `Beach Trip`, `Business`, `Cold Weather`), manual item input with 7 categories, and checkable packing progress bar
+- [x] Checklist Tab: Priority-badged tasks (`High`, `Medium`, `Low`) with due dates and participant assignees
+- [x] Container & Header Bar: 6-action header (Back, Edit, AI Regenerate Ideas, Export Report, Delete, Onboarding Guide)
+
+**In progress:**
+- None
+
+**Not started:**
+- Next Track B module (EMI Manager)
+
+**On hold / deferred:**
+- None
+
+**Known issues / tech debt:**
+- None. Verified with 21 backend integration tests and 0 TypeScript build errors.
+
+---
+
+## 6. On Hold / Deferred
+
+| Item | Reason | Revisit when |
+|---|---|---|
+| — | — | — |
+
+---
+
+## 7. Build Log
+
+| Date | Who | What changed |
+|---|---|---|
+| 2026-09-02 | Alok | Phase 1 Track B: Trip Manager module fully built end-to-end (Entities `tr_trips`, `tr_participants`, `tr_plan_stops`, `tr_category_budgets`, `tr_expenses`, `tr_expense_splits`, `tr_expense_payments`, `tr_packing_items`, `tr_checklist_items`, `TripService`, `TripAiPlannerService`, `TripController`, `TripIntegrationTest` 21/21 suite tests passing, 5-tab UI with 4 Money sub-tabs, Smart Split solver, debt minimization matrix, zero-division safeguards, Vietnam sample seeder, and router integration) |
+| 2026-09-02 | Alok | Phase 1 Track B: Vault module fully built end-to-end (Entities `vt_vault_profiles`, `vt_backup_codes`, `vt_notes`, `vt_device_keys`, `CaptchaService`, `VaultService`, `VaultController`, `VaultIntegrationTest`, WebCrypto AES-GCM-256 client crypto engine, Setup/Unlock/Timed 30s Reveal/Settings UI, and router integration) |
+| 2026-09-02 | Alok | Phase 1 Track B: Expense Tracker module fully built end-to-end (Entities `et_income_sources`, `et_transactions`, `et_tasks`, `et_notes`, Service calculations, Controller, Integration tests, Frontend tabs, and real DB-backed Summary API contract fulfillment) |
+| 2026-09-02 | Alok | Shared Design System & UI Package Redesign: Bespoke Obsidian Pine (`#0E1B15`), Alpine Linen (`#F3F6F3`), Burnished Brass (`#B88728`) palette; Plus Jakarta Sans & Fraunces typography; 1px structural gridlines (`#D2DDD4`); refactored `Toast`, `InsightsCard`, `EmptyState`, `OnboardingDrawer`, `CurrencySelector`, `CurrencyInput`, `LinkedBadge`, `IncludeToggle`, and the dual-ledger Workspace Shell |
+| 2026-09-01 | Alok | Phase 0.6: Cross-track API contracts (OpenAPI 3.0 YAML spec `contracts/cross-track-contracts.yaml`, `ExpenseContractMockController` for Track A consumers, `NetWorthContractMockController` for Track B consumers) |
+| 2026-09-01 | Alok | Phase 0.5: Shared frontend component package (`Toast` & `ToastContext` / `useToast()`, `InsightsCard` with 4 theme variants & metrics, `EmptyState` with CTAs, `OnboardingDrawer` with step-by-step guides & checkable tips checklist) |
+| 2026-09-01 | Alok | Phase 0.4: Universal linking mechanism (`LinkableEntity` `@MappedSuperclass`, `Linkable` interface, `SourceModule` enum, `LinkingService`), frontend `LinkedBadge` & `IncludeToggle`, Delink semantics decision resolved |
+| 2026-09-01 | Alok | Phase 0.3: Live Currency Service with Open ER API integration, 1-hour TTL in-memory caching, two-way conversion (`toBase` for DB storage in INR & `fromBase` for display), frontend `CurrencyContext`, `CurrencySelector` with country names/flags, `CurrencyInput`, `<Money />` component |
+| 2026-09-01 | Alok | Phase 0.2: Auth/JWT issuance & validation end-to-end, `user_profiles` entity & migration schema, Supabase environment setup, frontend AuthContext & API client |
+| 2026-09-01 | Alok | Phase 0.1: Repo scaffolding, Spring Boot 3.3.4 (Java 21) backend & React 18/TS/Vite frontend skeletons, com.finora.<module>.* package structure for all 8 modules + shared modules |
+| — | Alok | Doing all Phase 0 initialization solo (Alok & Reva can't work simultaneously) |
+
+---
+
+## 8. Open Questions / Decisions Pending
+
+- [x] **Delink semantics**: Resolved in Phase 0.4 — Delink converts a linked record into an independent standalone MANUAL copy with its current frozen values, setting `isLinked=false`, `sourceModule=MANUAL`, `sourceEntityId=null`, keeping the record fully editable and preserving calculation integrity.
+- [ ] Reconcile the three scoring layers (Expense Tracker health metrics, Net Worth Health Score, Suite-Wide Financial Health Overview) — intentional overlap vs. redundant computation?
+
+---
+
+## 9. Reference Docs
+
+- `Finora_Master_Reference.docx` — module UX/data-model detail, source of truth for feature spec
+- `Finora_Team_Build_Plan.docx` — who builds what, in what order, API contracts, timeline

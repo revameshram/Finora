@@ -1,0 +1,312 @@
+openapi: 3.0.3
+info:
+  title: Finora Cross-Track API Contracts
+  version: 1.0.0
+  description: >
+    Formal OpenAPI 3.0 contract specification for cross-track data dependencies
+    between Track A (Wealth & Growth, owned by Reva) and Track B (Cash Flow & Life Admin, owned by Alok).
+
+paths:
+  # =========================================================================
+  # CONTRACT 1: Expense Tracker Summary API (Owned by Track B, Consumed by Track A)
+  # =========================================================================
+  /api/v1/expenses/summary:
+    get:
+      summary: Get High-Level Monthly Expense Summary & Annual Trailing Spend
+      description: >
+        Provides current-month income, outflows, savings metrics, and the trailing
+        12-month annual spend required for FIRE Planner retirement projections (25x/33x multiplier).
+      tags:
+        - Expense Tracker Contract (Track B -> Track A)
+      parameters:
+        - name: month
+          in: query
+          description: Year and month in YYYY-MM format. Defaults to current month if omitted.
+          required: false
+          schema:
+            type: string
+            example: "2026-08"
+      responses:
+        '200':
+          description: Monthly expense summary successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseSummaryDto'
+
+  /api/v1/expenses/goal-linked:
+    get:
+      summary: Get Goal-Linked Transactions
+      description: >
+        Returns transactions linked to specific financial goals or investment targets
+        for Goal Manager and FIRE Planner tracking in Track A.
+      tags:
+        - Expense Tracker Contract (Track B -> Track A)
+      parameters:
+        - name: goalId
+          in: query
+          description: Filter transactions for a specific goal UUID.
+          required: false
+          schema:
+            type: string
+            example: "goal_fire_01"
+      responses:
+        '200':
+          description: List of goal-linked transactions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GoalLinkedTransactionDto'
+
+  # =========================================================================
+  # CONTRACT 2: Net Worth Liabilities & Assets API (Owned by Track A, Consumed by Track B)
+  # =========================================================================
+  /api/v1/networth/liabilities:
+    get:
+      summary: Get Current Liabilities List
+      description: >
+        Returns all liability records (loans, mortgages, credit lines) tracked in Net Worth Tracker
+        for EMI Manager consumption in Track B.
+      tags:
+        - Net Worth Tracker Contract (Track A -> Track B)
+      responses:
+        '200':
+          description: List of liabilities.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NetWorthLiabilityDto'
+    post:
+      summary: Push New Liability from EMI Manager into Net Worth Tracker
+      description: >
+        Allows EMI Manager in Track B to push a newly created loan/liability record into Net Worth Tracker,
+        flagging it with sourceModule = EMI_MANAGER and isLinked = true.
+      tags:
+        - Net Worth Tracker Contract (Track A -> Track B)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLiabilityRequest'
+      responses:
+        '201':
+          description: Liability created and linked in Net Worth Tracker.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetWorthLiabilityDto'
+
+components:
+  schemas:
+    ExpenseSummaryDto:
+      type: object
+      required:
+        - period
+        - totalIncome
+        - totalOutflow
+        - netSavings
+        - savingsRate
+        - averageMonthlySpend
+        - trailing12MonthAnnualSpend
+        - currency
+      properties:
+        period:
+          type: string
+          example: "2026-08"
+        totalIncome:
+          type: number
+          format: double
+          example: 185000.00
+          description: Total monthly inflow stored in base INR.
+        totalOutflow:
+          type: number
+          format: double
+          example: 92500.00
+          description: Total monthly expenditure stored in base INR.
+        netSavings:
+          type: number
+          format: double
+          example: 92500.00
+          description: totalIncome minus totalOutflow.
+        savingsRate:
+          type: number
+          format: double
+          example: 50.00
+          description: Percentage of income saved ((netSavings / totalIncome) * 100).
+        averageMonthlySpend:
+          type: number
+          format: double
+          example: 87500.00
+          description: Trailing 12-month average monthly outflow.
+        trailing12MonthAnnualSpend:
+          type: number
+          format: double
+          example: 1050000.00
+          description: Annualized spend for FIRE target calculation (25x/33x multiplier).
+        currency:
+          type: string
+          example: "INR"
+        topCategories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryBreakdownDto'
+
+    CategoryBreakdownDto:
+      type: object
+      required:
+        - category
+        - amount
+        - percentage
+      properties:
+        category:
+          type: string
+          example: "Housing & Rent"
+        amount:
+          type: number
+          format: double
+          example: 35000.00
+        percentage:
+          type: number
+          format: double
+          example: 37.84
+
+    GoalLinkedTransactionDto:
+      type: object
+      required:
+        - id
+        - amount
+        - date
+        - description
+        - category
+        - linkedGoalId
+        - sourceModule
+        - isIncluded
+      properties:
+        id:
+          type: string
+          example: "txn_exp_101"
+        amount:
+          type: number
+          format: double
+          example: 25000.00
+          description: Transaction amount in base INR.
+        date:
+          type: string
+          format: date
+          example: "2026-08-10"
+        description:
+          type: string
+          example: "Monthly SIP Allocation to Index Fund"
+        category:
+          type: string
+          example: "Investments"
+        linkedGoalId:
+          type: string
+          example: "goal_fire_01"
+        sourceModule:
+          type: string
+          example: "EXPENSE"
+        isIncluded:
+          type: boolean
+          example: true
+
+    NetWorthLiabilityDto:
+      type: object
+      required:
+        - id
+        - name
+        - category
+        - balance
+        - originalAmount
+        - interestRate
+        - isIncluded
+        - isLinked
+        - sourceModule
+      properties:
+        id:
+          type: string
+          example: "lia_nw_01"
+        name:
+          type: string
+          example: "HDFC Home Loan"
+        category:
+          type: string
+          example: "HOME_LOAN"
+        balance:
+          type: number
+          format: double
+          example: 4250000.00
+          description: Outstanding principal balance in base INR.
+        originalAmount:
+          type: number
+          format: double
+          example: 5000000.00
+          description: Sanctioned loan amount in base INR.
+        interestRate:
+          type: number
+          format: double
+          example: 8.50
+          description: Annual interest percentage.
+        isIncluded:
+          type: boolean
+          example: true
+        isLinked:
+          type: boolean
+          example: true
+        sourceModule:
+          type: string
+          example: "EMI_MANAGER"
+        sourceEntityId:
+          type: string
+          nullable: true
+          example: "emi_loan_101"
+        linkedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-01-15T10:30:00"
+
+    CreateLiabilityRequest:
+      type: object
+      required:
+        - name
+        - category
+        - balance
+        - originalAmount
+        - interestRate
+        - sourceModule
+        - sourceEntityId
+      properties:
+        name:
+          type: string
+          example: "SBI Personal Loan"
+        category:
+          type: string
+          example: "PERSONAL_LOAN"
+        balance:
+          type: number
+          format: double
+          example: 200000.00
+        originalAmount:
+          type: number
+          format: double
+          example: 200000.00
+        interestRate:
+          type: number
+          format: double
+          example: 11.50
+        sourceModule:
+          type: string
+          example: "EMI_MANAGER"
+        sourceEntityId:
+          type: string
+          example: "emi_loan_202"
+        isIncluded:
+          type: boolean
+          default: true
+          example: true

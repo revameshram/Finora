@@ -1,0 +1,665 @@
+MASTER REFERENCE DOCUMENT
+Finora
+Multi-Module Personal Finance Suite — consolidated research + build spec
+Reverse-engineered from westro.in (competitive reference) + original feature decisions  |  Compiled August 22, 2026
+0. How to Use This Document
+This is a living context-preservation doc for Finora, a multi-module personal finance suite. Its job is to hold everything gathered/decided so far in one place so nothing is lost between sessions. Content comes from three kinds of sources, and each module section below labels which is which:
+Observed — directly seen in Westro (westro.in) screenshots or live page fetch. Reverse-engineered feature reference only — not a copy of their branding, code, or copy text.
+Inferred — a reasonable guess based on names/tags/adjacent UI, explicitly not verified.
+Finora decision — your own product/build requirement, independent of what Westro does (sometimes matching it, sometimes deliberately different).
+Modules covered so far in full depth: Expense Tracker (§4), Net Worth Tracker (§5), Portfolio Tracker (§6), Goal Manager (§7), Trip Manager (§8, expanded across §12, §15.2, §16.1–16.5, §16.13–16.14), FIRE Planner (§11, resolved across §15.1, §16.6–16.7), and Vault (§13, resolved across §15.3, §16.8–16.10). Not yet covered: EMI Manager — entirely unexplored, still Coming Soon status in Westro itself (see §9, §17).
+1. Project Identity
+Name: Finora.
+Nature: a multi-module personal finance suite — both a real personal tool and a placement-portfolio piece.
+Stack (consistent across modules): Spring Boot 3.x + Spring Data JPA + PostgreSQL/Supabase backend; React 18 + TypeScript + Vite + Tailwind frontend; JWT-based auth.
+Related prior projects feeding into this: Asset Hub (polymorphic asset architecture, XIRR/CAGR, live pricing via Yahoo Finance/AMFI/CoinGecko), WealthMap (Indian-family net worth tracker), KYCc (credit card/personal finance tracker).
+Workflow convention: phased AI-IDE prompts, mandatory Step 0 written plan (with worked numeric examples) before any code, package namespacing by module (com.<app>.<module>.*), DB tables prefixed per module to avoid collisions.
+1.1 Scope & Build Decisions — Confirmed
+The following were explicitly decided by the person building Finora (not inferred), and supersede any earlier ‘open question’ framing on the same topics elsewhere in this doc:
+Module scope: all 8 modules are in scope — Net Worth Tracker, Expense Tracker, Portfolio Tracker, Goal Manager, Trip Manager, FIRE Planner, Vault, EMI Manager. This doc should capture everything gathered so far in full detail, not a trimmed subset.
+Build order: no fixed sequencing is baked into this document — all modules are documented flat, side by side. Sequencing is a separate, later decision, not something this reference doc needs to prescribe.
+Suite-wide Insights tab (§2.5): adopt fully and build early — not deferred to a later phase, not simplified down to 1–2 charts. The cross-module aggregation dashboard (Financial Health Overview, Key Metrics by life-area, Trends charts, Recommendations feed) is a first-class, early-build feature for Finora.
+Multi-profile / family sharing (§2.6): adopt fully — full multi-profile support with the cross-profile data-access sharing toggle, matching Westro’s Observed behavior (opt-in per profile, Recommended-on by default). Not simplified to siloed profiles, not deferred to single-profile-only.
+Trip Manager AI itinerary planner: keep as a real, core AI feature (calling an external LLM API) — not a stretch/optional add-on to build after the rest of the module. Budget real implementation effort and API cost/latency planning for it accordingly.
+2. Suite-Level Architecture
+2.1 Hierarchy — Observed
+Profile — tied to an email, verified/star/warning badges, shows a rollup stat block (Income/Outflow/Pending) sourced from Expense Tracker specifically.
+Workspace — one per profile; entry point for switching between profiles (family members).
+Module tile — icon, status badge (Ready/Beta/New/Coming Soon), title, 1-line description, a live mini-summary card or “No data yet” placeholder, and a data-aware CTA (“Get Started” vs. e.g. “Analyze Spend” once data exists).
+Marketing/landing shell sits before the workspace — three-tier structure: public marketing → authenticated landing → workspace. Two landing-copy variants observed at different times: “See the full picture of your money / Your financial life, gathered without the noise.” and “Build calm clarity around your wealth / Track portfolios, goals, and spending in one calm workspace.” — likely an A/B variant or a copy update between sessions; not confirmed which is canonical/current.
+Persistent top bar (every screen): logo, profile switcher, currency selector, dark-mode toggle, account icon.
+2.2 Module Catalog — Observed
+Module
+Status (Westro)
+Depth covered in this doc
+Net Worth Tracker
+Ready
+Full — §5
+Expense Tracker
+Ready
+Full — §4
+Portfolio Tracker
+Beta/Ready
+Full — §6
+Goal Manager
+New/Ready
+Full — §7
+FIRE Planner
+Ready
+Full — §11 (resolved across §15.1, §16.6–16.7)
+Trip Manager
+Beta/Ready
+Full — §8, expanded §12, §15.2, §16.1–16.5, §16.13–16.14
+Vault
+Ready
+Full — §13 (resolved across §15.3, §16.8–16.10)
+EMI Manager
+Coming Soon
+Name/tags only, not shipped in Westro either
+2.3 Cross-Module Linking — Universal Pattern (Finora decision, confirmed by Observed evidence)
+This is the single most important structural finding across all modules gathered so far: content is interlinked across modules, with an explicit, per-item option to delink or exclude. This is not one module's quirk — it shows up consistently and should be built as a shared mechanism, not reimplemented per module.
+Two distinct mechanisms observed, easy to conflate — keep them separate: (1) a soft Include/Exclude toggle on any individual record (asset, liability, transaction) that keeps the data but drops it from totals/calculations; (2) a Delink action specific to cross-module-sourced records (e.g. a Net Worth asset pulled from Portfolio Tracker) that severs the live sync, likely converting it to a standalone manual record or removing it.
+Confirmed instances: Net Worth Tracker liabilities have an enable/disable toggle in Actions; Net Worth Tracker assets sourced from Portfolio Tracker show a lock icon + Delink action, plus a section-level “Include Portfolio” checkbox and “Open Portfolio” shortcut; Expense Tracker transactions have an include/exclude toggle as well (confirmed this session).
+Finora decision: build this as a shared backend concern — e.g. a generic isIncluded/isLinked + sourceModule + sourceRecordId pattern reusable across Asset, Liability, Transaction, and any future cross-module record, rather than bespoke flags per entity.
+2.4 Other Universal Patterns (Finora decisions layered onto the Observed base)
+Live price as purchase price: an opt-in checkbox on every “add holding/asset” form across the whole project (not just Portfolio Tracker) that pre-fills the cost field with the current live price instead of requiring manual entry.
+Inline live-price display: wherever an add-item form has a price/cost field, show the current live price in small text nearby for reference, project-wide.
+Currency toggle button: a simple button to flip displayed values between ₹ and $ using the live FX rate — generalized from the pattern seen on Portfolio Tracker's US Stocks tab.
+Schedule detail modal: the FD amortization-schedule modal (opened via a hand/view icon in Actions) should be replicated for Bonds as well (Observed: FD has it; Bonds doesn't yet in Westro — Finora decision to add it).
+Toast notifications: a reusable success/error toast component (Observed pattern: green “SUCCESS — ETF added.” top-right, dismissible) for any create/update/delete action across all modules.
+Financial Insights block: Observed independently on both Net Worth Tracker and Expense Tracker — each module gets its own composite health score + component ratios + a Recommendations feed. Worth formalizing as a shared “Insights panel” UI pattern with per-module scoring logic underneath (see §4.4 and §5.4 for the two observed scoring models, which differ).
+2.5 Suite-Wide Insights Tab — Observed (corrects an earlier assumption)
+The Workspace screen has two top-level tabs — Tools (the module grid, §2.2) and Insights. Insights is a genuine cross-module aggregation dashboard, separate from and in addition to each module's own internal Insights/Financial Health panel (§2.4). This directly corrects an assumption made in the earlier Portfolio Tracker reference doc, which stated ‘no cross-module service calls for MVP — don't design for it now.’ Westro's actual architecture has a live suite-level aggregation layer; Finora should plan for one, even if it's deferred past an initial module-by-module MVP.
+Suite-wide Financial Health Overview: a single 0–100 score with a qualitative badge (e.g. 85/100 “Excellent”), explicitly described as ‘Based on net worth, debt ratio, and liquidity.’ This is a third, distinct scoring layer alongside each module's own score (Net Worth Tracker and Expense Tracker each compute their own separately, per §4.4/§5.4) — three scoring layers total: per-module, and one suite-level composite.
+Key Metrics grid, grouped by life-area, each card tagged with its source module(s): Financial foundation (Debt Service %); Cash flow and growth (Savings Rate); Travel planning (Upcoming Trips, Total Trip Spending, Avg per Trip — sourced from Trip Manager); Investments (Investments Match: Linked/Not-linked status, Portfolio Return); Goals and long-term plans (FIRE Progress, Spending vs FIRE Plan, Goal Progress).
+Trends and Analysis charts, each tagged with source module(s): Net worth by category, Portfolio mix, Portfolio growth, Progress toward FIRE, Assets and debt, Trip spending, and Goal balances by category — the last one carries an explicit note: ‘goal-scoped; not added to net worth,’ confirming Goal Manager balances are deliberately excluded from Net Worth totals by default (avoids double-counting against linked Portfolio Tracker assets that may already be feeding a goal).
+Insights and Recommendations feed: a suite-wide synthesis, distinct from and richer than any single module's own Recommendations feed — color-coded cards (green/orange/red), each citing its source module tag(s), e.g. ‘Portfolio is linked into Net Worth’ (Portfolio Tracker + Net Worth), ‘2 goals are behind schedule’ (Goal Manager), ‘High Per-Trip Spending’ (Trip Manager), ‘Low Liquidity,’ ‘Manageable Debt,’ ‘Well-Allocated Assets.’
+Finora decision: confirmed in §1.1 — adopt fully and build early. Plan the data model with consistent source-module tagging on any record/metric that could feed the suite-wide view, since it's a first-class feature, not a deferred one.
+2.6 Profile Management — Observed
+Profile page is a carousel, not a static card: dot-indicator + next/prev navigation cycling through multiple info slides per profile (at least a stats-overview slide confirmed; other slide contents not yet captured).
+Edit Profile modal — two tabs: Basics (Name, Email with a Verify action, Gender picker: Male/Female/Other, Date of Birth) and Data access (a cross-profile sharing toggle: ‘Allow cross-profile data access — Use this profile in other profiles’ tools,’ marked Recommended and on by default).
+Create New Profile modal mirrors the same two-tab structure exactly — confirms Data access is a setting decided at profile-creation time, not bolted on later.
+Finora decision: confirmed in §1.1 — build the full multi-profile model with a genuine cross-profile data-access permission toggle (opt-in per profile), matching Westro's Observed behavior exactly, not simplified to hard isolation between profiles.
+3. Cross-Module Data Model Conventions (Finora decisions)
+One shared User/Profile table at the umbrella-app level; each module's tables reference user_id/profileId as a FK but live under their own table prefix (e.g. nw_ for Net Worth, pt_ for Portfolio, et_ for Expense Tracker) so no collisions as modules are added.
+Package namespace by module, not by layer: com.finora.<module>.* with controller/service/repository/model as sub-packages inside each module package.
+JWT auth is module-agnostic — issuance lives outside any single module; each module only validates a JWT and reads user_id from claims.
+No cross-module service calls assumed for early builds — each module should be functional standalone; a future cross-module aggregation layer (e.g. true all-module net worth) is a separate concern, not designed for yet but not blocked either.
+Currency: store amounts in a single baseCurrency per user (default INR); convert for display only via a live rates API. Base vs. display currency is a workspace/profile-level setting, not per-module.
+4. Module Deep Dive — Expense Tracker
+Fully explored. Month-scoped budgeting ledger; the suite's primary cash-flow lens.
+4.1 Core Concepts — Observed
+Budget Month scoping: every record (income, transactions, tasks, notes) partitioned by month; nothing carries over automatically. “Copy From” bulk-duplicates income/transactions/tasks from a chosen source month.
+Pending vs. Done state machine on every transaction — silently branches how summary metrics compute (see §4.3).
+Include/Exclude toggle on individual transactions (confirmed this session) — same universal pattern as §2.3, lets a transaction be kept but dropped from totals without deleting it.
+Combinable filters: status pills (All/Pending/Done) x category pills (Expense/EMI/Investment/Savings/Undecided/Retirement/FIRE/Unplanned Travel/Home Improvement/Other) — category-based transaction filtering confirmed on the dashboard.
+4.2 Features — Observed
+Income Sources — Name, Amount, optional Instrument; searchable/sortable; edit/delete/history actions.
+Transactions — Item, Description, Category, Amount, Payment Status, Payment Date; inline Done/Pending toggle; include/exclude toggle; search + combined filters.
+Goal Manager linking — optional, surfaced for Savings/Investment/Retirement/FIRE categories. Originally understood as ‘Done triggers a contribution’; corrected in §7.8 — Done tags/associates the transaction with the goal for reporting, but does not move the goal's Saved/progress figure. Only Goal Manager's own Funding (starting balance) and Link Investments (live Portfolio Tracker value) affect goal balance.
+Tasks — Task, Status, optional due Date, Notes.
+Notes — freeform, timestamped, append-only per month.
+Summary tab — Category Breakdown donut + Transaction Status donut (Pending vs Done, amount + count).
+4.3 Dashboard Metrics — Verified Formulas
+Metric
+Formula
+Notes
+Total Inflow
+Σ Income.amount (this month)
+Unaffected by transactions.
+Total Outflow
+Σ Transaction.amount WHERE status IN (Pending, Done)
+Includes committed-but-unpaid spend.
+Cash Flow
+Total Inflow − Total Outflow
+Forward-looking / committed view.
+Net Position
+Total Inflow − Σ Transaction.amount WHERE status = Done
+Actual settled position; ignores Pending.
+Pending
+Σ Transaction.amount WHERE status = Pending
+Standalone sum.
+Verified against a captured state: ₹99,940 inflow (1 income row) + one Pending ₹1,999 Expense transaction produced Total Outflow ₹1,999, Cash Flow ₹97,941, Net Position ₹99,940 (unchanged), Pending ₹1,999.
+4.4 Financial Insights Panel — Observed (new this session)
+A dedicated Insights panel exists on Expense Tracker, structurally parallel to (but numerically distinct from) the one on Net Worth Tracker — confirms this is a suite-wide UI pattern applied per-module with module-specific scoring, not a single shared score.
+Component
+Observed detail
+Financial Health Score (0–100)
+Composite score with a qualitative badge (e.g. 29/100 “Needs Attention” vs. Net Worth Tracker's 100/100 “Excellent”) — confirms each module computes its own score, not a shared one.
+Savings Rate
+% of income saved after all expenses. Tooltip: ‘20% or higher is excellent, 10–20% is good, below 10% needs improvement.’
+Expense Ratio
+% of income consumed by expenses; shown with a Healthy/Needs-Improvement badge.
+Pending Ratio
+% of total outflows that are still Pending.
+Largest Income Source / Largest Transaction
+Single biggest entries surfaced directly.
+Key Insights grid
+Emergency Fund Target (6 months × monthly expense), Income Sources count, ‘If All Pending Complete’ projected net position, Monthly Savings Goal (20% benchmark, with a Goal Achieved indicator), Cash Flow Velocity, Transaction Count (completed/pending split), Avg Transaction Size.
+Recommendations feed
+Same pattern as Net Worth Tracker — contextual actionable tips based on current metrics.
+Note: the Savings Rate/Expense Ratio/Pending Ratio + Emergency Fund/Cash Flow Velocity formulas are a distinct, richer scoring model from Net Worth Tracker's Debt-to-Asset/Liquidity-Ratio model (§5.4) — each module's Insights panel needs its own formula set, not a shared one, even though the visual container pattern is shared.
+4.5 Data Model (proposed, from earlier spec)
+Entity
+Key Fields
+IncomeSource
+id, profileId, budgetMonth, name, amount, instrument, timestamps, deletedAt
+Transaction
+id, profileId, budgetMonth, item, description, category, amount, status, paymentDate, isIncluded, goalId (nullable), timestamps, deletedAt
+Task
+id, profileId, budgetMonth, task, status, dueDate, notes, timestamps
+MonthlyNote
+id, profileId, budgetMonth, content, createdAt
+GoalTag
+id, goalId, sourceTransactionId, taggedAt — owned by Goal Manager; a reporting association only, does not affect goal balance (corrected in §7.8 — superseded the earlier GoalContribution-from-Expense-Tracker assumption)
+Full REST endpoint sketch and non-functional notes are in the standalone Expense Tracker Feature Spec document produced earlier — not repeated here.
+5. Module Deep Dive — Net Worth Tracker
+5.1 Core Concepts — Observed
+Three-tab dashboard: Assets / Liabilities / Summary.
+Assets can be Manual (fully editable) or Portfolio-linked (read-only, auto-synced, lock icon, per-row Delink action) — portfolio linking is live and working, not just a schema hook as originally assumed in the pre-screenshot reference doc.
+Section-level “Include Portfolio” checkbox + “Open Portfolio” shortcut sits above the linked-assets list.
+Liabilities carry a separate soft enable/disable toggle in Actions (distinct from Delink) — include/exclude from Net Worth totals without deleting.
+5.2 Categories — Observed (broader than originally assumed)
+Asset categories: Cash & Bank, Investments, Crypto, Gold & Silver, Real Estate, Vehicles, Retirement Accounts, Business Assets, and at least one more category cut off in the screenshot (likely Personal or Portfolio-related) — confirm before finalizing the enum.
+Liability categories: Home Loan, Car Loan, Personal Loan, Credit Card, Student Loan, Business Loan, Other.
+Both lists are broader than the original CASH_BANK/INVESTMENTS/REAL_ESTATE/VEHICLE/GOLD_JEWELRY/RETIREMENT_FUND/OTHER enum drafted before screenshots were available — notably Crypto and Business Assets/Loan are additions.
+5.3 Net Worth Projection — Observed
+Three editable growth scenarios (Conservative/Moderate/Aggressive, default 5%/10%/15%, each with a ‘doubles in ~N years’ hint and delete option, plus “+Add” for more scenarios).
+Projection period selector: 5Y/10Y/20Y/30Y, custom value also enterable.
+Key nuance: “Portfolio-linked value is held flat in this projection; see Portfolio Tracker for investment forecasts” — linked assets are explicitly excluded from Net Worth Tracker's own growth math to avoid double-counting against Portfolio Tracker's separate growth-outlook projection.
+Category Breakdown: Donut/Pie toggle, separate Assets-by-category and Liabilities-by-category panels with hover tooltips showing exact value + % of total.
+Top Holdings Overview: horizontal bar chart ranking top assets/liabilities by value.
+5.4 Financial Insights / Health Score — Observed
+Component
+Observed detail
+Financial Health Score (0–100)
+e.g. 100/100 “Excellent” with a green check icon.
+Debt-to-Asset Ratio
+e.g. 5.0%, ‘Healthy’ badge.
+Liquidity Ratio
+e.g. 2002.3%, described as ‘Liquid assets / Liabilities’.
+Largest Asset / Largest Liability
+Single biggest entries surfaced directly.
+Recommendations feed
+Contextual tips, e.g. ‘Excellent Financial Health! Consider: maxing out retirement accounts, estate planning, tax-loss harvesting’ or ‘Enable Projections: Add Growth Rates to Your Assets (Growth Rates Set: 0/5)’.
+The originally-drafted 4-component weighted formula (35% debt-to-asset + 25% liquidity + 20% diversification + 20% debt servicing) may be over-built relative to what the UI actually surfaces — only 2 ratio cards are shown (Debt-to-Asset, Liquidity), though the backend could still compute more components than it displays. Treat the 4-factor formula as a reasonable starting model to tune, not something to revise based on the UI alone.
+5.5 Data Model (from original reference doc, categories to be widened per §5.2)
+Entity
+Key Fields
+Asset
+id, userId, name, category, value, acquiredDate, growthRatePct (nullable), recurringInvestment (nullable), notes, source (MANUAL/PORTFOLIO_LINKED), isIncluded, timestamps
+Liability
+id, userId, name, category, amount, incurredDate, interestRatePct (nullable), recurringPayment (nullable), notes, isIncluded, timestamps
+NetWorthSnapshot
+id, userId, date, totalAssets, totalLiabilities, netWorth, healthScore — generated weekly or on-demand
+Net worth = Σ included assets − Σ included liabilities. Full projection formula (compound growth + FV-of-annuity for assets, amortization for liabilities), health-score formula, payoff guidance (avalanche default / snowball toggle), API surface, and the master implementation prompt are preserved in full in the standalone Net Worth Tracker reference doc — not repeated here.
+6. Module Deep Dive — Portfolio Tracker
+6.1 Asset Classes — Observed
+Indian Stocks, Mutual Funds, ETFs (Indian), NPS/UPS, US Stocks, US ETFs, Deposits (FD/RD), Bonds, Metals (Gold/Silver/Platinum, karat purity), Real Estate, Others (with Category Mix % splitting).
+Left icon rail = one tab per asset class, consistent across the module.
+6.2 Dashboard — Observed
+Header KPIs: Present Value, Total Invested, Portfolio Composition (asset-class count), Highest Profit, Highest Loss, with 1D change and a Disclaimer link.
+Asset Allocation donut (Debt/Equity/Others) + Growth chart (invested vs. worth today) + Metals mini-panel.
+Portfolio by category, Mutual fund by category, Mutual fund by capitalisation, NPS Scheme Allocation — all as separate numeric breakdown panels mirroring the donut.
+6.3 Portfolio Growth Outlook — Observed
+Structurally close to the growth-projection pattern already built in Asset Hub — direct reuse candidate.
+Sliders: Expected yearly return %, years ahead, monthly savings, optional inflation.
+Today vs. N-years-out value cards, dual-line chart (nominal vs. inflation-adjusted ‘spending power’), assumptions saved per profile with Reset.
+6.4 Equity Drawdown Check — Observed
+Sliders: how far prices fall (%), assumed yearly return for recovery estimate.
+Applies the drop only to the Equity bucket (stocks, equity ETFs, equity MFs, equity-NPS) — explicitly excludes FDs, bonds, gold, property.
+Output cards: Equity After Drop, Equity Loss, Portfolio-level impact (e.g. ‘0.01% below today's total’).
+6.5 Holdings Tables — Observed
+Consistent columns per asset class: name/ticker, qty/units, cost, current price, invested, value, gain/loss, actions (+/edit/delete).
+Add Stock/ETF modals: search-as-you-type (3+ characters), Quantity, Cost; ‘Add Shares’ variant on an existing holding shows current shares/avg cost/current price as context; ‘Save & Add More’ for rapid multi-entry.
+US holdings: separate tab, values in $, live FX rate shown inline with a live-indicator dot (e.g. ‘1 USD = ₹95.66’), plus a ₹/$ toggle button.
+FD detail modal (hand/view icon in Actions): full schedule — Date, Deposit, Earned Interest, Capital, Status (Paid/Realized/Upcoming).
+Bond detail modal: same pattern, columns — Date, Coupon, Capital, Payout, Status.
+Add Instrument (Others) modal: Category Mix toggle — percentage-allocation splitter across Equity, US Equity, Debt, Gold, Silver, Real Estate, Cash, Currency, ESG, Collectibles, Others, with a live-validated running total (‘100.0% Good to go’) and a ‘Use 100% as Others’ shortcut.
+Toast notification: green ‘SUCCESS — ETF added.’ top-right, dismissible — confirmed as the pattern to reuse app-wide (see §2.4).
+6.6 Finora-Specific Build Decisions for This Module
+Live price as purchase price: checkbox on the Add Stock/ETF/Holding forms to auto-fill cost with the current live price — applied project-wide, not just here (see §2.4).
+Inline live price display: show current live price in small text near the cost field on every add-holding form.
+Currency conversion button: simple ₹↔$ toggle for displayed values, generalized from the US Stocks tab pattern.
+Bond schedule modal: add the same hand/view-icon → schedule-detail behavior for Bonds that Westro currently only has for FDs.
+Toast component: build as a shared, reusable success/error notification component from day one, not per-module.
+Cross-module linking: Portfolio Tracker is confirmed as the central source feeding other modules (Net Worth Tracker today); every consuming module needs its own include/exclude toggle for linked Portfolio data, per §2.3.
+6.7 Data Model — Polymorphic Design (from earlier reference doc)
+JOINED table inheritance: a base pt_asset table (id, userId, asset_type discriminator, name, timestamps) with one subclass table per asset type — pt_stock_holding, pt_mutual_fund_holding, pt_etf_holding, pt_nps_holding, pt_deposit, pt_bond, pt_metal_holding, pt_real_estate, pt_other_instrument (+ pt_other_instrument_category_mix child table). Full field-level schema, tiered feature scope (MVP/Differentiators/Stretch), API surface, and the Strategy+Factory pricing-layer design are preserved in full in the standalone Portfolio Tracker reference doc — not repeated here.
+Correction to that standalone doc: it assumed no cross-module aggregation is needed for MVP. §2.5 now confirms Westro has a live suite-wide Insights layer that reads Portfolio Tracker data (Portfolio Return, Portfolio mix, Investments Match status) alongside Net Worth and FIRE Planner — plan the data model to make this feasible later even if not built early.
+7. Module Deep Dive — Goal Manager
+Fully explored. Savings-goal tracker with pace tracking against a monthly capacity, optional live linking to Portfolio Tracker holdings, and bulk-contribution tooling.
+7.1 Dashboard — Observed
+Icon rail: Overview / Achievements / Timeline / History.
+Header KPIs: Saved (₹ + % of target via radial gauge), On Track count, Behind count, Monthly (total required contribution rate across all goals), Next Due (days + goal name).
+Capacity bar: total required monthly contribution vs. a user-set Monthly Savings Capacity — flags over-capacity with the exact overage amount and a ‘Fix’ shortcut into settings.
+Allocation donut: how total saved money splits across goals, with % and ₹ per goal.
+Per-goal summary cards: name, category, progress %, saved/target, progress bar.
+Alerts/nudges feed: ‘X is behind pace’ and ‘Contribute to X’ items are clickable shortcuts straight into that goal's detail page, not static text.
+7.2 Goal Manager Settings (the ‘Fix’ target) — Observed
+Monthly savings capacity (₹) — the ceiling used to compute over-capacity warnings.
+Behind-schedule threshold (%) — how far off-pace a goal must be before it's flagged Behind.
+Default inflation rate (%) — used to compute each goal's inflation-adjusted future value target.
+7.3 Goal Detail Page — Observed
+Status badges (Active/Behind/Archived/etc.), category, priority, target date.
+Present value → Adj. FV: today's target value plus an inflation-adjusted future value, using the Default inflation rate setting.
+Saved/% progress bar, days-until-due, required monthly contribution, assumed return %.
+Notes field (freeform).
+‘FROM PORTFOLIO TRACKER’ linking block: same cross-module link pattern as Net Worth Tracker — a ‘Link investments’ CTA when nothing's linked yet, with copy: ‘we’ll keep your saved amount up to date automatically.’ Confirms Goal Manager is a third confirmed consumer of the Portfolio Tracker link pattern (alongside Net Worth Tracker), reinforcing the shared-mechanism recommendation in §2.3.
+Manage actions: Pause, Complete (confirm modal: ‘This marks the goal as completed. You can still view it in filters.’), Archive, Delete.
+7.4 Goal List View — Observed
+Filters: status, category, priority, sort — plus a Create Goal CTA.
+Goal cards: today's value → planning value, /MO required contribution, return %, days left; row actions: contribute (+), edit, history.
+7.5 Per-Goal Sub-Pages — Observed
+History: chronological contribution log with a running balance, entries labeled by type (SIP, Bonus top-up, Monthly save, Small transfer, etc.).
+Actual vs Planned: line chart comparing the planned linear trajectory to the actual saved trajectory, shaded gap between them, with a ‘Behind · 12%’-style label.
+Milestones: custom % checkpoints (default set: 25/50/75/100% complete) with editable labels and target %, add/delete.
+7.6 Contribution Tooling — Observed
+Single Contribute modal: Type toggle (Contribution/Withdrawal), Amount, Date, optional Note.
+Bulk Contribution modal — three distinct modes: Per goal (enter an amount per goal individually); Split % (one total amount divided by user-set percentage across goals); Split fixed (one total amount, per-goal amounts must sum exactly to it, enforced client-side). All three share Date + optional Note fields.
+7.7 Timeline View — Observed
+Horizontal progress bars per goal spanning start-date to target-date, with a ‘today’ marker positioned along the bar, and inline saved/target/today's-value figures.
+7.8 Create Goal Modal — Observed (new this session)
+A 4-tab modal, and the most detailed single form captured in this module — confirms goal creation is a deliberately multi-step wizard, not a single flat form.
+Tab
+Fields / behavior
+Basics
+Goal Name*, Category* (dropdown with icon, e.g. Emergency Fund), Priority* (e.g. Medium), Notes (optional — ‘Why this goal matters…’).
+Target & Plan
+Target Date*, Target Amount* with a Today's money / Future value toggle; Inflation (%), Expected Annual Return (%), Contribution Frequency (e.g. Monthly); a category-driven smart-default banner (‘Typical starting target for Emergency Fund. Adjust to your situation.’ + Apply) — confirms each goal Category ships with a template default target/assumptions the user can accept or override.
+Funding
+Starting balance (‘Cash or savings not tracked elsewhere, e.g. money in your bank that isn't in Portfolio Tracker’), Account label (optional). A prompt cross-links to the next tab: ‘Already tracking investments in Portfolio Tracker? Link them to this goal.’
+Link Investments
+Cross-profile investment picker: search + type-grouped list (Mutual Funds, Stocks, US Stocks, …), each row toggleable link/unlink, an ‘All investments’ / ‘Linked (N)’ filter. Explicit rule stated in-app: ‘Pick investments from any profile that allows cross-profile data access and has Portfolio Tracker holdings… Each investment can only be linked to one goal in this profile.’
+Cross-profile investment linking confirms §2.6's Data access permission is functionally load-bearing, not cosmetic — it's the exact gate that determines which profiles' Portfolio Tracker holdings are selectable here.
+7.9 Data Model (proposed, Finora)
+Entity
+Key Fields
+Goal
+id, profileId, name, category, priority, targetAmount, targetIsFutureValue (bool), targetDate, inflationRatePct, expectedAnnualReturnPct, contributionFrequency, startingBalance, accountLabel, currentValue (denormalized: startingBalance + manual contributions + linked-investment live value), status, notes, timestamps
+GoalContribution
+id, goalId, type (CONTRIBUTION/WITHDRAWAL), amount, date, note, sourceType (MANUAL/BULK) — Expense-Tracker-tagged transactions are NOT a sourceType here per §7.8's correction; they associate via GoalTag instead, without affecting amount
+GoalInvestmentLink
+id, goalId, portfolioAssetId, linkedProfileId — enforces the ‘one goal per investment, per profile’ rule observed in §7.8
+GoalTag (new, per §7.8 correction)
+id, goalId, expenseTransactionId — records the tag/association from an Expense Tracker Savings/Investment/Retirement/FIRE transaction without contributing to currentValue
+GoalMilestone
+id, goalId, label, targetPct, timestamps
+GoalManagerSettings
+id, profileId, monthlySavingsCapacity, behindScheduleThresholdPct, defaultInflationRatePct
+Business logic to define in a Step 0 plan before building: Adj. FV = targetAmount compounded at defaultInflationRatePct over time-to-target; required monthly contribution = amortized shortfall between currentValue and Adj. FV over remaining days; On Track/Behind classification driven by behindScheduleThresholdPct comparing actual vs. planned linear trajectory (same math that powers the Actual vs Planned chart); over-capacity = sum(all active goals' required monthly contribution) > monthlySavingsCapacity.
+8. Module Deep Dive — Trip Manager (Partial)
+Only onboarding, empty states, and the two trip-creation flows have been captured; the post-creation trip detail screens (Overview, Plan, Money, Pack & Prep, Notes) have not yet been screenshotted.
+8.1 Observed So Far
+Positioned as a ‘privacy-first trip expense tracker’ — manage travel expenses, split costs with a group, track budgets, AI-powered itinerary planning.
+Two trip-creation paths: a lightweight Manual Trip modal (name, destination, departure, adults/kids counts, dates, hotel preference, notes), and a richer two-pane ‘Trip Planner Pro’ AI modal (form + an AI ‘Ideas for your trip’ panel with draft selection, a 1200-char free-text prompt, and a daily AI-generation quota, e.g. ‘20/20’).
+Confirmed via onboarding/tips copy (not yet screenshotted directly): Balances view, custom/non-equal expense splitting, PDF export of a trip report.
+Post-creation trip has 5 sections per the onboarding copy: Overview (traveler management), Plan (itinerary builder), Money (expenses/budget/splits/balances/settlement), Pack & Prep (checklists), Notes.
+8.2 Open Questions
+Exact field-level UI for Overview/Plan/Money/Pack & Prep screens — not yet captured.
+Whether Money tab balances sync with Net Worth Tracker or another central ledger — not confirmed, plausible given the suite-wide linking pattern in §2.3.
+Whether ‘Plan trip’ (full AI generation) differs from ‘Refresh Ideas’ or shares the same underlying call.
+Full marketing metadata, field tables for both creation modals, and the consolidated feature list are preserved in the standalone Trip Manager reference doc.
+9. Remaining Modules — Not Yet Explored
+Known only from the workspace tile grid (name, status, tagline, 2 tag chips). No screenshots of internals gathered yet.
+Module
+Status
+Tagline
+Tags
+FIRE Planner
+Ready
+Calculate your path to Financial Independence and Retire Early…
+FIRE number · Years to FIRE
+Vault
+Ready
+Your vault. Your keys.
+Encrypted notes · Local unlock
+EMI Manager
+Coming Soon
+EMIs, schedules, and payoff clarity.
+Loan schedules · Prepayment
+FIRE Planner is now partly specified indirectly via the suite-wide Insights tab (§2.5): it feeds ‘FIRE Progress’ and ‘Spending vs FIRE Plan’ metrics, comparing current net worth against a FIRE target and comparing actual spending (from Expense Tracker) against an assumed annual spend the FIRE plan is built on. Its own dedicated module UI has still not been screenshotted.
+10. Consolidated Open Questions
+Exact behavior of Delink on a Portfolio-linked Net Worth or Goal Manager asset — does it convert to a standalone manual record, or remove it entirely?
+The cut-off asset category in Net Worth Tracker (partially visible as ‘Po…’) — confirm full category enum.
+Whether Expense Tracker's, Net Worth Tracker's, and the suite-wide Financial Health Score are fully independent formulas or share any inputs — three scoring layers confirmed (§2.5), exact overlap not confirmed.
+Trip Manager's Money-tab detail screens, and whether trip balances integrate with the suite's cross-module Insights layer beyond the Trip spending metric already confirmed.
+Full detail for FIRE Planner, Vault, EMI Manager — pending screenshots.
+Whether the shared toast/notification and live-price-checkbox components should live in a common frontend package from day one, or be built per-module and refactored later.
+What other Profile-carousel slides exist beyond the stats-overview slide, and what ‘other profiles’ tools’ access actually unlocks when Data access sharing is enabled.
+11. Module Deep Dive — FIRE Planner (Session Update, August 23, 2026)
+Fully explored via the live FIRE Planner page and its onboarding drawer. Single-page retirement-number calculator with three interchangeable view modes driven by a left icon rail, plus a persistent results sidebar. This supersedes the “name/tags only” status noted for this module in §2.2 and §9.
+11.1 Core Concepts — Observed
+Left icon rail with 3 modes — Input Parameters (calendar icon, active by default), a second mode (₹/mode-toggle icon) that per the onboarding copy is where the user switches between ‘Years to FIRE’ and ‘Required Savings’ views, and a third mode (bar-chart icon) opening the Summary tab with savings-growth charts.
+Two-column layout — left = Input Parameters form, right = a persistent sidebar with the FIRE Number card, the active mode’s result card (Years to FIRE / Required Savings), and a static ‘About FIRE’ explainer card.
+Starting corpus, three sources — inside Current Savings/Investments the user can pull from Net Worth (auto-synced, ‘No data yet’ placeholder when unlinked), Portfolio (auto-synced, same placeholder), or enter Your own total (manual ₹ override) — the same cross-module sync pattern already confirmed in §2.3, with FIRE Planner now a third confirmed consumer alongside Net Worth Tracker and Goal Manager.
+Current Age is explicitly Optional — Years to FIRE simply can’t be computed without it — ‘Unable to calculate. Please check your inputs.’ is shown until a valid Age + Expenses + Savings/Return combination exists.
+11.2 Input Parameters — Observed (defaults & helper copy)
+Field
+Default
+Helper / tooltip copy
+Current Savings/Investments (Your own total)
+₹0
+“Add data in Net Worth or Portfolio to sync next time.”
+Current Age (Optional)
+blank — placeholder ‘e.g., 30’
+—
+Monthly Savings
+₹0
+—
+Expected Annual Return (%)
+7
+“Typical range: 6–10% for diversified portfolio”
+Annual Expenses in Retirement
+₹0
+“Your expected annual expenses after retirement”
+Safe Withdrawal Rate (%)
+4
+“The 4% rule suggests withdrawing 4% annually from your portfolio”
+Expected Annual Inflation (%)
+3
+“Accounts for rising expenses over time. Typical range: 2–4% annually (0% allowed)”
+Note — the in-form helper text for Expected Annual Return (‘Typical range: 6–10%’) and the onboarding drawer’s Tips for Best Results (‘Use realistic return assumptions, typically 8–12%’, §11.4) disagree by a few points and were not reconciled this session — flagged as an open question in §14.
+11.3 Results Sidebar — Observed
+FIRE Number card — headline ₹ value with subtext template ‘{SWR}% withdrawal rate × ₹{Annual Expenses} expenses’ — a plain-language recap of the inputs feeding the number, not a literal multiplication (the actual 4%-rule math divides expenses by the withdrawal rate — see §11.5).
+Years to FIRE card — either a computed year count, or, when inputs are insufficient, the fallback message ‘Unable to calculate. Please check your inputs.’
+About FIRE static card — ‘Financial Independence means having enough savings to cover your living expenses without needing to work. The 4% rule suggests you can safely withdraw 4% of your portfolio annually in retirement.’
+11.4 Onboarding — How to Use FIRE Planner — Observed
+Step
+What it does
+1. Enter Finances
+Pick Net Worth or Portfolio Tracker for your starting corpus, and optionally pull spending from Expense Tracker.
+2. Calculate Corpus
+Our algorithm determines your FIRE number — the total nest egg required based on the 4% rule and your inflation assumptions.
+3. Review Your Mode
+Switch between ‘Years to FIRE’ to see your timeline, or ‘Required Savings’ to see what you need to invest to retire by a specific age.
+4. Visualize Results
+Explore the ‘Summary’ tab for detailed charts showing your savings growth projection and actionable insights to reach your goal faster.
+Confirms the 3-icon rail from §11.1 maps to these steps: Input Parameters = steps 1–2 (the corpus/FIRE Number recalculates live as inputs change); the mode-toggle icon = step 3 (Years to FIRE / Required Savings); the bar-chart icon = step 4 (Summary tab).
+11.4.1 Tips for Best Results — Observed
+Use realistic return assumptions (typically 8-12%)
+Factor in inflation (6-7% for India) for realistic projections
+Review and update your inputs annually as your income changes
+Adjust withdrawal rates based on your risk tolerance
+Use Net Worth or Portfolio Tracker for your starting corpus
+Pull monthly savings and expenses from Expense Tracker
+The 4% rule is a guideline - consider your local market conditions
+11.5 FIRE Math — Inferred (reconstructed from visible inputs/outputs; the calculation engine itself is not directly observable)
+FIRE Number — Annual Expenses in Retirement ÷ (Safe Withdrawal Rate ÷ 100) — the standard 4%-rule inverse (e.g. a 4% SWR implies a 25×-expenses multiple), consistent with the sidebar subtext in §11.3.
+Years to FIRE (Inferred) — solve for n such that the future value of (current corpus compounded at Expected Annual Return) plus (Monthly Savings as an annuity at the same rate) reaches an inflation-adjusted FIRE Number (Annual Expenses grown at Expected Annual Inflation, then divided by SWR) — the same compound-growth + FV-of-annuity shape already scoped for Net Worth Tracker’s projection engine (§5.5) and Portfolio Tracker’s Growth Outlook (§6.3); a strong reuse candidate.
+Required Savings mode (Inferred, not screenshotted) — likely the inverse solve — given a target retirement age, back-calculate the Monthly Savings that closes the gap between the current corpus’s projected value and the inflation-adjusted FIRE Number by that age.
+11.6 Finora-Specific Build Decisions for This Module
+Shared growth engine — reuse the compound-growth + FV-of-annuity engine already scoped for Net Worth Tracker (§5.5) and Portfolio Tracker’s Growth Outlook (§6.3) rather than writing a third implementation — same underlying formula, three front-ends.
+Manual override stays live — keep the manual ‘Your own total’ field always editable even when a linked Net Worth/Portfolio source is available, matching Westro’s behavior of leaving that field active alongside the two read-only synced cards.
+Resolve the return-assumption inconsistency — pick one authoritative Finora copy value instead of carrying forward the 6–10% vs. 8–12% mismatch flagged in §11.2.
+Cross-module Insights tie-in — this module is the confirmed source of the suite-wide ‘FIRE Progress’ and ‘Spending vs FIRE Plan’ metrics already logged in §2.5/§9 — build FIRE Number and current-progress-% as queryable outputs from day one.
+11.7 Data Model (proposed, Finora)
+Entity
+Key Fields
+FirePlan
+id, profileId, currentSavingsSource (NET_WORTH/PORTFOLIO/MANUAL), manualCurrentSavings, currentAge (nullable), monthlySavings, expectedAnnualReturnPct, annualExpensesInRetirement, safeWithdrawalRatePct, expectedAnnualInflationPct, activeMode (YEARS_TO_FIRE/REQUIRED_SAVINGS), timestamps
+FirePlanSnapshot
+id, firePlanId, computedAt, fireNumber, yearsToFire (nullable), requiredMonthlySavings (nullable) — cached recompute history, mirrors the NetWorthSnapshot pattern in §5.5
+12. Module Deep Dive — Trip Manager, Expanded (Session Update, August 23, 2026)
+Adds to the Partial coverage already logged in §8 — this session captured the module landing/onboarding in full, the Manual Trip creation modal field-by-field, and the first post-creation screen (Overview tab) of a real trip. §8’s content is unchanged; treat this section as the continuation.
+12.1 Landing / Onboarding — Observed (expands §8.1)
+Getting Started card — shown on the module landing page before any trip exists. Copy: ‘Create a trip to plan your itinerary, track expenses, and settle with travelers.’ Three numbered setup steps (Use Trip Planner Pro or create a manual trip; Open the trip page and add travelers on Overview; Use Plan, Money, and Pack & Prep as you go.) sit above three CTAs: ‘+ Create your first trip’, ‘Trip Planner Pro’ (badged with a daily generation quota, e.g. 20/20), and ‘Try with sample data’ — a seed-data shortcut not previously confirmed.
+Shared onboarding-drawer pattern — below the Getting Started card, the same numbered How-to-use block + Tips-for-Best-Results checklist already established for FIRE Planner (§11.4) and Vault (§13.4) repeats here — confirms this two-block onboarding drawer is a shared, reusable UI component across every module, not built per-module.
+12.1.1 How to Use the Trip Manager — Observed
+Step
+What it does
+1. Create a trip
+Start with Trip Planner Pro or a manual trip. Each trip opens on its own page.
+2. Add travelers
+On Overview, add who is traveling so expenses can be split fairly.
+3. Plan and spend
+Build the itinerary in Plan, then log costs and settle balances in Money.
+4. Prep and notes
+Use Pack & Prep for packing and checklists; keep freeform notes handy.
+Tips for Best Results (Observed, partial — capture was cut off after two items): ‘Add travelers before logging expenses’ and ‘Set a realistic budget in Money’; remaining tips not captured this session.
+12.2 Manual Trip Creation Modal — Observed (field-level detail, supersedes the summary line in §8.1)
+Field
+Notes
+Trip Name*
+required; placeholder e.g. ‘Weekend Getaway to Goa’
+Destination
+placeholder e.g. ‘Goa, India’
+Departure Location
+placeholder e.g. ‘Kolkata, India’
+No. of Adults / No. of Kids
+numeric steppers, default 2 / 0
+Start Date* / End Date*
+required date pickers
+Hotel Preference
+dropdown, default ‘No preference’
+Additional Details
+free text, placeholder ‘Specific interests, food preferences, or notes...’
+General Description
+free text field; sat below the fold in the captured screenshot, full behavior not confirmed
+12.3 Trip Detail Page — Overview Tab — Observed (new — first post-creation screen captured)
+Header action bar — back, edit (pencil), AI regenerate (sparkle — ties to Trip Planner Pro), download, duplicate, delete — six icon actions sit above every trip, regardless of tab.
+Hero card — status badge (e.g. ‘Upcoming’), trip title, subtitle (trip name), and a meta row — location pin, date range, traveler count.
+Left icon rail — confirms the 5 sections named in the earlier onboarding copy (§8.1) map to 5 icons: Overview (grid, active by default), Plan (branching-path icon), Money (briefcase), Pack & Prep (shield), Notes (document).
+Four dashboard tiles — each with its own empty state and a deep-link CTA into the owning tab — Next on Plan (‘Nothing scheduled’ / 0 items → Open plan); Budget (‘Not set’ / ‘Set a budget in Money’ → Open money); Checklist (‘No tasks yet’ / 0 total → Pack & prep); Packing (‘No list yet’ / ‘Ready to pack’ → Pack & prep).
+Travelers / Participants block — sits below the tiles — ‘Add people before splitting expenses’ framing copy, an Add Participant CTA in the section header, and a dedicated empty state (generic person icon, ‘No participants yet’, ‘Add your first participant to get started’, Add First Participant button). Confirms travelers are managed from Overview specifically, per the onboarding copy in §12.1.1, and that expense-splitting is gated on at least one participant existing.
+12.4 Open Questions — carried forward / updated from §8.2 and §10
+Plan, Money, Pack & Prep, and Notes tab internals are still not captured — Overview is now fully specified (§12.3), narrowing what’s left.
+Whether the AI sparkle icon on the trip header re-runs Trip Planner Pro against an existing trip, or is a separate regenerate action, is still not confirmed.
+‘Try with sample data’ (§12.1) is a newly observed entry point — unclear whether it seeds a full demo trip or just pre-fills the creation modal.
+12.5 Finora-Specific Build Decisions for This Module
+Shared onboarding-drawer component — build once (numbered How-to steps + Tips checklist) and reuse across FIRE Planner, Trip Manager, Vault, and every future module, per §12.1’s confirmation that it’s a suite-wide pattern.
+Gate expense-splitting — behind ‘at least one participant added,’ matching the Overview empty-state framing in §12.3.
+Dashboard tiles as deep-links — each Overview tile’s CTA should route directly into the relevant tab (Plan/Money/Pack & Prep) rather than a generic ‘view trip’ click — build as a config-driven tile→tab mapping so future tabs can register their own summary tile.
+13. Module Deep Dive — Vault (Session Update, August 23, 2026)
+Fully explored via the onboarding drawer, the vault-setup confirmation screen, and the main Vault screen (empty state). This supersedes the “name/tags only” status noted for this module in §2.2 and §9. Encrypted, password-gated private-notes locker; the most security-sensitive module in the suite and the one with the most explicit user-facing legal/security copy.
+13.1 Core Concepts — Observed
+Zero-knowledge framing — explicit and repeated in-app: ‘Westro cannot open the notes,’ and, for backup codes, ‘This data is not stored on our infrastructure.’
+Separate master password — the vault sits behind its own password, distinct from the account login password, set up via a dedicated first-run flow before any note can be created.
+Exactly 3 one-time backup/recovery codes — issued at the moment the vault is secured (UUID-formatted strings) — the only restoration method if the password is forgotten; Westro states it cannot reset a forgotten vault password.
+Two optional unlock conveniences, both additive — Device Protection (an extra lock keyed per-browser, showing a one-time key ‘you will not see again’) and Biometric/Face ID/fingerprint unlock (a shortcut only — ‘your password still works’) — neither replaces the master password.
+Session-based lock state — an explicit Lock action on the main Vault screen ends the unlocked session; onboarding repeatedly stresses locking when stepping away and not leaving notes visible on shared/crowded screens.
+13.2 Vault Setup Flow — Observed
+Step
+What it does
+1. Set your vault password
+Create a strong, unique password. Do not reuse one from email or banking.
+2. Save your backup codes
+Write the backup codes from setup and keep them away from the notes. They are the spare key if you forget the password.
+3. Add private notes
+Add only notes you actually need to keep private. Westro cannot open them.
+4. Optional: Device Protection
+Turn this on in Vault Settings if you want an extra lock on browsers you have not used before. Save the key when it is shown; you will not see it again.
+5. Optional: Face ID or fingerprint
+Turn this on in Vault Settings if you want a shortcut to unlock. Your password still works.
+6. End your session
+Lock the vault when you finish. Do not leave secrets on screen in a crowded place.
+‘Vault Secured’ confirmation screen — shown immediately after steps 1–2 — green checkmark, ‘Vault active. Save these codes offline immediately.’, a Restriction banner repeating that the codes are the only restoration method and are not stored on Westro’s infrastructure, the 3 backup codes displayed as #01/#02/#03, an inline Enable Biometric Unlock toggle offered right on this screen (not just buried in Settings), and Copy Codes / Acknowledge actions.
+13.3 Main Vault Screen — Observed
+Top bar — a shield/security icon, a search field scoped to ‘Search labels or descriptions...’, Settings, + New Note, and Lock.
+Empty state — shield-with-checkmark icon, ‘YOUR VAULT IS EMPTY’, subtext ‘Encrypted vault for your sensitive credentials and private data’, and a Create First Note CTA — mirrors the empty-state pattern already seen on Trip Manager (§12.3) and Goal Manager, confirming icon + headline + subtext + single-CTA empty states are a shared component, not built per-module.
+Search scope — explicitly limited to labels/descriptions only, implying note bodies stay encrypted/unsearchable server-side — consistent with the zero-knowledge framing in §13.1.
+13.4 Tips for Best Vault Usage — Observed
+Use a unique, strong vault password. Never reuse one from another app or website.
+Store backup codes offline, outside the vault. Westro cannot replace them.
+If Device Protection is on, save the key when it is shown.
+Lock the vault when you finish. Do not leave notes open on a shared screen.
+Face ID is a shortcut. Keep backup codes as well.
+Name entries clearly and delete notes you no longer need.
+13.5 Vault Disclaimer — Observed (full security/usage notice shown in the onboarding drawer)
+Westro cannot open vault notes and cannot reset a forgotten password; backup codes from setup must be kept safe, away from the notes.
+Close/lock the vault when stepping away; do not leave secrets on screen in a crowded place (this instruction appears twice, near-verbatim, within the same disclaimer block in the captured copy — likely a copy-editing duplication on Westro’s side, not a deliberate double warning).
+Keep software up to date; be careful with unknown apps or browser add-ons while the vault is open.
+If a note is copied, paste it where needed and clear the clipboard afterward — don’t leave copied secrets sitting around.
+Face ID/fingerprint is a shortcut only; keep a strong phone passcode and the backup codes regardless.
+Losing both the password and the backup codes means Westro cannot recover the vault at all.
+Double-check important details before use; remove old passwords/notes no longer needed.
+13.6 Finora-Specific Build Decisions for This Module
+Genuine zero-knowledge design — never persist the vault master password, and never store note plaintext or a recoverable derivation of it server-side — mirrors Westro’s explicit ‘cannot open the notes’ / ‘not stored on our infrastructure’ claims; Finora should actually satisfy this, not just claim it in copy. Recovery is backup-codes-only, by design, with no server-side password reset path.
+Backup codes — generate exactly 3 one-time, high-entropy codes at setup, shown once, never retrievable again — derive/wrap the note-encryption key from them rather than storing the codes themselves.
+Device Protection and Biometric Unlock — both remain optional convenience layers on top of the master password, never a replacement for it — same relationship Westro describes (‘your password still works’).
+Reuse shared components — the empty-state and onboarding-drawer components already scoped in §12.5 rather than building vault-specific versions.
+Client-side-only search — query note labels/descriptions against decrypted-in-memory data on the client — never send plaintext search terms or note bodies to the backend.
+13.7 Data Model (proposed, Finora — encryption-aware)
+Entity
+Key Fields
+VaultProfile
+id, profileId, passwordHash (Argon2/bcrypt, verification only — never used to derive the data key), kdfSalt, deviceProtectionEnabled, biometricEnabled, createdAt
+VaultBackupCode
+id, vaultProfileId, codeHash, usedAt (nullable) — 3 rows per vault, generated once at setup
+VaultNote
+id, vaultProfileId, label, description, encryptedBody (ciphertext only), iv/nonce, timestamps, deletedAt — server never sees plaintext body; label/description are searchable but should still be treated as sensitive metadata, not fully public
+VaultDeviceKey
+id, vaultProfileId, deviceFingerprint, keyShown (bool) — supports the Device Protection ‘extra lock on browsers you have not used before’ flow
+14. Session Addendum — Open Questions & Notes (adds to §10, does not replace it)
+FIRE Planner: resolve the 6–10% vs. 8–12% expected-return guidance mismatch between the input-field helper text and the Tips drawer (§11.2/§11.4.1) before finalizing Finora’s own copy.
+FIRE Planner: Required Savings mode’s exact UI (presumably its own target-retirement-age input) has not been screenshotted — only inferred from the onboarding copy (§11.4/§11.5).
+Trip Manager: Plan, Money, Pack & Prep, and Notes tab internals remain uncaptured — only Overview is now fully specified (§12.3).
+Trip Manager: the full Tips for Best Results list was cut off after two items in this session’s capture (§12.1.1) — remaining tips not confirmed.
+Trip Manager: the General Description field in the Manual Trip modal sat below the fold and was not fully captured (§12.2) — same ‘field cut off’ caveat pattern as the Net Worth asset-category cutoff already logged in §10.
+Vault: whether note labels/descriptions are searchable via a server-side encrypted index, or purely client-side against decrypted data, is inferred, not confirmed, from the ‘Westro cannot open the notes’ framing (§13.3/§13.6).
+Vault: exact contents of Vault Settings (referenced repeatedly for Device Protection and Face ID toggles) have not been screenshotted directly — only inferred from onboarding copy.
+End of session addendum — FIRE Planner, Trip Manager, and Vault sections (§11–§14) compiled from westro.in screenshots captured August 23, 2026 (feature reference only, not a copy of branding/code/copy) plus original Finora product decisions. Existing content in §1–§10 is unchanged.
+15. Completion Pass — Resolving §14 Open Questions for FIRE Planner, Trip Manager, Vault (Session Update, August 23, 2026)
+§14 logged a set of items that were not directly observable from the captured screenshots. This section resolves each of them with a labeled Inferred reconstruction or an explicit Finora decision, so the three modules read as build-ready rather than leaving open stubs. Nothing in §1–§14 is altered — this section supersedes §14’s items in practice (use these answers when building) while leaving the original open-question record intact for traceability.
+15.1 FIRE Planner — Resolved
+Return-assumption inconsistency (resolves §11.2/§14) — Finora decision — adopt ‘6–10%, typical for a diversified portfolio’ as the canonical in-form helper copy next to the Expected Annual Return field (matches the literal input hint, and the field default of 7% already sits inside that range). Treat the Tips drawer’s ‘8–12%’ as separate, looser onboarding-level encouragement rather than a formula default — do not let it drive the field default or validation range.
+Required Savings mode UI (resolves §11.4/§11.5/§14, not screenshotted) — Inferred, by mirroring the Input Parameters layout — Current Age is replaced with a required Target Retirement Age field; every other input (Current Savings/Investments, Expected Annual Return, Annual Expenses in Retirement, Safe Withdrawal Rate, Expected Annual Inflation) carries over unchanged, since those set the target and growth assumptions rather than the timeline. The sidebar’s Years-to-FIRE card is replaced with a Required Monthly Savings card, computed as the level monthly contribution that closes the gap between the current corpus’s projected value at the target age and the inflation-adjusted FIRE Number (§11.5).
+Summary tab charts (Inferred, referenced in §11.4 step 4 but not screenshotted) — a savings-growth-projection line or area chart (current trajectory vs. FIRE Number as a target line), plus an actionable insights/recommendations feed — same visual and copy pattern as the Financial Insights panels already fully observed on Expense Tracker (§4.4) and Net Worth Tracker (§5.4), reused here rather than invented fresh.
+15.2 Trip Manager — Resolved
+Plan tab (Inferred) — a day-by-day itinerary builder — activities/stops with a name, time, location, and notes, grouped per day of the trip. Shape is inferred from two internal precedents: Goal Manager’s Timeline view (§7.7, horizontal per-item bars against a date range) and the AI-drafted itinerary already visible inside the Trip Planner Pro creation panel (§8.1/§12.1) — Plan is most likely that same draft, editable after trip creation.
+Money tab (Inferred, several sub-features already confirmed by onboarding copy even though the screen itself wasn’t captured) — an expense ledger scoped to the trip (item, amount, payer, category, split type) feeding: a Balances view netting out who-owes-whom (confirmed to exist per §8.1 onboarding copy); custom/non-equal expense splitting (confirmed per §8.1); the trip Budget figure already surfaced on the Overview tile (§12.3); and a PDF export of a trip report (confirmed per §8.1). This is the fullest gap-fill in Trip Manager — the feature list is confirmed, only the field-level screen layout is inferred.
+Pack & Prep tab (Inferred) — two related but distinct lists live behind one tab — a Checklist (task-style, matching the Overview tile’s ‘No tasks yet / 0 total’ framing) and a Packing list (item-style, matching ‘No list yet / Ready to pack’). Likely simple add/check-off/delete rows for both, no further structure confirmed.
+Notes tab (Inferred) — freeform notes scoped to the trip, most plausibly timestamped and append-only — mirroring the Monthly Notes pattern already fully observed on Expense Tracker (§4.2).
+AI sparkle icon on the trip header (Finora decision, resolves §12.4) — treat it as ‘Regenerate ideas for this trip’ — re-runs the Trip Planner Pro engine scoped to the trip’s existing destination/dates, sharing the same underlying call and daily quota as trip creation rather than being built as a separate feature.
+‘Try with sample data’ (Finora decision, resolves §12.4) — implement as a fully seeded demo trip with all 5 tabs populated (sample travelers, itinerary, expenses, checklist, notes), not just a pre-filled creation modal — its placement next to ‘Create your first trip’ on the landing page suggests it exists so a first-time user can explore the whole module immediately, without committing real data.
+Remaining Tips for Best Results (Finora decision — exact Westro copy beyond the two captured items is not recoverable; propose Finora’s own additions in the same voice) — ‘Use Trip Planner Pro for a fast starting itinerary, then adjust it by hand’; ‘Log expenses as you go rather than reconstructing them after the trip’; ‘Export a PDF report once the trip wraps up, before archiving it.’ Marked explicitly as Finora-authored, not observed Westro text.
+15.3 Vault — Resolved
+Vault Settings screen (Inferred, referenced repeatedly in onboarding but not screenshotted directly) — holds the Device Protection toggle and the Face ID/fingerprint toggle (§13.2 steps 4–5), and most plausibly also a Change Vault Password action. Finora decision: do not offer backup-code regeneration from Settings — the Vault Secured screen (§13.2) frames the 3 codes as shown once, and regenerating them without knowing the current password would either weaken the zero-knowledge guarantee or require the same recovery flow it’s meant to solve. Losing both the password and all 3 backup codes should be an unrecoverable state, by design, consistent with §13.6’s zero-knowledge decision.
+Search scope (Finora decision, resolves §14’s question) — implement note search entirely client-side against decrypted-in-memory data. Never index note bodies or labels server-side, even in encrypted form — a server-side index (encrypted or not) creates a metadata/timing side-channel that Westro’s ‘cannot open the notes’ claim doesn’t need to accept, and Finora’s own zero-knowledge decision in §13.6 should hold to the stricter standard.
+Disclaimer duplication (resolves the wording note in §13.5) — Finora decision: treat it as a Westro copy-editing artifact, not a deliberate double warning — Finora’s own disclaimer copy should state the ‘lock before stepping away’ guidance once, cleanly, rather than reproducing the duplication.
+With §15, every item raised in §14 for FIRE Planner, Trip Manager, and Vault now has either a confirmed Observed answer (already in §11–§13) or an explicitly labeled Inferred/Finora-decision answer here — no open stubs remain for these three modules. Genuinely unscreenshotted UI (Plan/Money/Pack & Prep/Notes tab layouts, the Vault Settings screen, FIRE Planner’s Required Savings screen) should still be re-verified against the live site before implementation; the labels above indicate confidence level, not certainty.
+16. Module Deep Dive — Full Field-Level Capture (Session Update, August 23, 2026, continued)
+This session captured live screenshots of the remaining Trip Manager tabs (Plan, Money in full, Pack & Prep, Checklist), the full 3-tab FIRE Planner flow including the Summary tab, and the full Vault flow (Settings, Unlock, Secure Note create/view). Where this supersedes an Inferred item from §12/§15, that is called out explicitly; §1–§15 content is otherwise unchanged.
+16.1 Trip Manager — Plan Tab (Observed, resolves §15.2’s Inferred Plan tab)
+Day-by-day itinerary builder — confirms the Inferred shape in §15.2. Empty state: calendar icon, “No stops yet”, “Build a day-by-day timeline: transport, stays, meals, and activities.”, + Add stop CTA.
+Add Itinerary modal fields — Date*, Time, Title, Category (dropdown incl. Activity), Location, Description, Estimated Cost, Participants (checkbox list of trip participants), Notes.
+Populated view groups stops by day — day header shows date badge (e.g. “23 AUG”), day number, stop count, weekday/full date; each stop row shows time, category pill (e.g. MEAL, OTHER), title, location, and per-row action icons (attach, search, navigate, share, edit, delete). A day-level “Route map” button sits beside each day header.
+Route map (new, not previously logged) — opens a modal embedding Google Maps, labelled stops (A/B/C…), a driving-directions polyline between them, Map/Satellite toggle, and a disclaimer: “Route follows saved pins when available; otherwise places are estimated from location text. Driving directions use Google Directions.”
+Verified example (Vietnam trip) — a fully populated 8-day/20-stop itinerary confirms real usage: each stop line carries an estimated cost (e.g. “Airport Transfer & Hotel Check-in — Est. ₹54,000.00”) and a longer free-text description below the location line, beyond what the Add Itinerary modal’s single Description field suggested — description text appears to render as rich/expandable, not truncated.
+16.2 Trip Manager — Money Tab (Observed, resolves §15.2’s Inferred Money tab)
+Four sub-tabs confirmed under Money: Budget, Expenses, Settle, Insights. A persistent header shows Trip Spend (₹ spent / ₹ budget, % used, ₹ left, progress bar).
+Budget sub-tab — Overall Budget (single ₹ input) + optional Category Budgets (Transportation, Accommodation, Food & Dining, Activities & Entertainment, Shopping, Miscellaneous, Tour Operator — 7 fixed categories, same set used in the Budget vs Plan table). A collapsible “Budget vs plan” panel below shows a table: Category | Budget | Projected | Diff (B–P) | Actual | Diff (B–A) | Utilization%, plus three summary cards: Projected Reality (Realistic/Conservative Budget verdict + variance), Spending Status (Under/Over Budget + actual), Market Projections (current estimate).
+Expenses sub-tab — Add Expense modal, 4-tab structure — Basic (Description*, Category* dropdown incl. Miscellaneous, Total Amount*, Expense Date*, Payment Status* [Pending/…]); Splits (Expense Splits list, Smart Split button, + Add Split button, empty state “No splits added yet”); Pay (Payments list with + Add Payment, empty state “No payments found”); Notes (single free-text Notes field, optional).
+Smart Split Calculator (new, not previously logged) — separate modal reachable from the Splits tab. Total Amount to Divide header; two modes — By Shares (ratio input per participant, e.g. “2:1”) and By Percentage (%); Adjust Weightage / Split Evenly / Reset controls; per-participant share/percentage input with live-computed ₹ amount; Calculated Total footer; Apply Splits action.
+Add Payment modal — From* (participant dropdown) / To* (participant dropdown), Amount*, Payment Method (dropdown, default Cash), Date, Status (dropdown, default Pending), Reference/Transaction ID (optional), Notes (optional).
+Settle sub-tab — not directly screenshotted this session; its output surfaces inside Insights’ Participant Summary and Participant Split vs Payment Analysis tables (Paid / Share / Net / Balance / Status columns), so Settle is most likely a focused view of the same per-participant net-balance data with an action to record the settling payment — treat as Inferred until screenshotted directly.
+Insights sub-tab — top stat row: Spent, Budget Left, Used%, Daily Avg; Spending breakdown chart toggle (Categories/Travelers) with an empty-state placeholder; a Highlights card (“Keep logging expenses to unlock trip highlights”). Below, a collapsible “Full analysis” panel nests, in order: Budget Analysis (Total Budget / Remaining / Utilization%), Category Analysis, Participant Summary (Paid/Share/Net/Status per participant), Spending Insights & Analytics (Spending Velocity — ₹/day average + projected total), Payment Tracking & Analysis (Total Payments, Payment Coverage%, Fully Paid Expenses, Pending Payments, then Payment Status by Expense and Participant Payment Analysis tables), Participant Split vs Payment Analysis (Split Amount/Total Paid/Balance/Status), and Trip Planning Reports (Trip Timeline — Status/Days Elapsed/Days Remaining; Cost Projections — Projected Remaining/Projected Total/Budget Status; Cost Efficiency Metrics — Cost per Day/Cost per Person per Day/Average Expense Size), closing with Actionable Insights & Recommendations and Summary Statistics (Total Expenses, Total Payments, Avg per Day, Settlements).
+Bug observed — on a fresh trip with zero budget set, the Budget Status card under Cost Projections renders “NaN%” instead of a guarded fallback (e.g. — or 0%) — a divide-by-zero-by-budget case Finora should explicitly guard against.
+16.3 Trip Manager — Pack & Prep and Checklist (Observed, resolves §15.2’s Inferred Pack & Prep tab)
+Packing list — Quick Add Templates row (Basic Essentials, Beach Trip, Business, Cold Weather — one-tap template seeding), a manual “Add new item…” input with a category dropdown (default Other) + Add button, and an empty state (“Ready to pack?”, suitcase icon) below.
+Checklist (a separate view under the same tab family, not the Packing list itself) — Add Todo modal: Title*, Category (dropdown, default Other), Priority (dropdown, default Medium), Due Date, Assigned To (checkbox list of participants), Description (optional). Confirms Checklist and Packing are two genuinely distinct lists as already inferred in §15.2, now with full Checklist field detail.
+16.4 Trip Manager — Participant Dependent/Family Linking (Observed, new pattern)
+Drag-to-nest dependents — the populated Vietnam example shows a “Link Dependents/Family Members” affordance: “Drag a participant onto another to mark them as dependent/family member. Dependents will appear nested under their parent.” Nested rows show a smaller card indented under the parent, labelled “of {Parent Name}”, with just Name + Age (no separate phone/language/food fields shown at the nested level).
+Participant categories confirmed beyond Tourist — grouped section headers with counts: Tourist, Travel Manager, Driver (plus Cook/Guide/Other were visible as selectable-but-unused options in the Add Participant Category dropdown in the earlier session).
+16.5 Trip Manager — Verified Real-Trip Numbers (Vietnam example)
+A completed 8-day, 8-traveler trip (₹4,50,000 budget, ₹3,26,150 spent, 72% used) gives a concrete Budget vs Plan snapshot worth preserving as a worked example for Finora’s own test fixtures:
+Category
+Budget
+Projected
+Actual
+Utilization
+Miscellaneous
+₹5,000
+₹3,65,400
+₹18,000
+360%
+Transportation
+₹1,80,000
+N/A
+₹1,05,750
+59%
+Accommodation
+₹1,20,000
+N/A
+₹1,02,000
+85%
+Food & Dining
+₹80,000
+N/A
+₹64,400
+81%
+Activities & Entertainment
+₹50,000
+N/A
+₹21,000
+42%
+Shopping
+₹15,000
+N/A
+₹15,000
+100%
+Tour Operator
+N/A
+N/A
+₹0
+0%
+Total
+₹4,50,000
+₹3,65,400
+₹3,26,150
+—
+Reading — the Projected column is only populated at the Total/Miscellaneous level in this example (a forecast/trend figure, ₹3,65,400, distinct from Budget), not per-category for the other six rows (all N/A) — suggests Projected is a suite-wide forecast rolled up rather than a per-category line item, still worth confirming directly against the live calculation engine before Finora finalizes its own Projected formula.
+16.6 FIRE Planner — Mode Assignment Corrected (Observed, corrects §11.1/§15.1)
+§11.1 described the second rail icon generically as toggling between “Years to FIRE” and “Required Savings” views without confirming which icon maps to which. Full screenshots now confirm the exact assignment, which is the reverse of what §15.1’s Required-Savings inference assumed:
+Tab 1 — Input Parameters (calendar icon, default) — input is Target Years to FIRE (a year count, not a target age); output card is Required Monthly Savings (“You’ll achieve FIRE at age {current age + target years}”, plus Target Years / Current Savings / Projected at FIRE recap lines).
+Tab 2 — $ icon (tooltip: “Years to FIRE”) — input is Monthly Savings (₹); output card is Years to FIRE (“You’ll achieve FIRE at age {current age + years}”, plus Current Savings / Monthly Savings / Projected at FIRE recap lines).
+Correction to §15.1 — the earlier Inferred write-up assumed the Required Savings mode would ask for a Target Retirement Age; the real field is Target Years to FIRE (relative, not absolute), and Current Age remains a separate optional field on both tabs used only to display the “achieve FIRE at age N” framing. Finora’s own build should use years-to-target as the primary input, not target age, matching Westro.
+Both tabs share identical remaining inputs — Current Savings/Investments (Net Worth / Portfolio / Your own total pill toggle, confirmed a third time), Expected Annual Return %, Annual Expenses in Retirement, Safe Withdrawal Rate %, Expected Annual Inflation %.
+16.7 FIRE Planner — Summary Tab (Observed, resolves §15.1’s Inferred Summary charts)
+4 stat cards — Progress to FIRE (%, with a horizontal progress bar and current/target ₹ recap), Savings Rate (%/year, flags Low Savings Rate in red when near 0%), Expected Return (%, annual growth), Years to FIRE.
+Insights & Recommendations feed — same reusable insights-card component already seen on Expense Tracker (§4.4) and Net Worth Tracker (§5.4), now confirmed a third time on FIRE Planner with these exact observed card titles/copy: “FIRE Achieved!” (green, shown once the target is already met), “Low Savings Rate” (red warning, “Aim for at least 30%” threshold), “High Inflation Assumption” (red warning, triggers at 8%+), “Fast Track to FIRE” (green, shown alongside a positive years-to-FIRE figure).
+Savings Growth Projection chart — dual-line chart, Years (0–target) on the x-axis, Amount (₹, Cr scale) on the y-axis: solid green “Projected Savings” line vs. dashed red “FIRE Number (Inflation Adjusted)” line, with a vertical “FIRE Achieved” marker at the year the two lines cross, and a “FIRE Achieved in Year N — You’ll be {age} years old” callout beneath it.
+Progress bar chart + Savings Breakdown — a two-bar comparison (Current vs. FIRE Target) plus a Savings Breakdown card (Current Monthly Savings, Annual Savings, Monthly Rate%).
+16.8 Vault — Vault Settings Screen (Observed, resolves §15.3’s Inferred item)
+Exactly two toggles — Biometric Unlock (“Unlock with Touch ID, Face ID, fingerprint, or a hardware security key”) and Device Protection (“Adds a spare key for browsers you have not used before”), both off by default, plus a single Done action. No Change Vault Password action is present on this screen, consistent with §15.3’s decision not to expose password/backup-code regeneration there.
+16.9 Vault — Unlock Vault Screen (Observed, new — not previously captured)
+Two-factor unlock gate — Password field (masked dot entry) plus a mandatory Human Verification CAPTCHA challenge (distorted-text image + a refresh icon + a text input to type the code) before the Unlock Vault action is available. Forgot Password?, Terms of Vault, and Safety Tips links sit below.
+Finora implication — this CAPTCHA step was not previously logged anywhere in §13/§15.3 and should be treated as a Finora decision point: a bot-throttling layer on vault unlock attempts (in addition to normal rate-limiting) is worth adopting given the vault’s zero-knowledge/high-sensitivity framing.
+16.10 Vault — Secure Note Create & View Flow (Observed, new — not previously captured)
+Create Secure Note modal — Label* (e.g. “Password for Amazon”), Description (optional reference note), Tag (optional, single-select pill picker from a fixed palette: None/Finance/Official/Personal/Work/Social/Banking/Medical, plus a “New tag…” free-text + Add for custom tags), Secret Value* (masked textarea with a Show toggle), Save Securely action.
+View Note modal — timed auto-hide reveal (new, distinctive pattern) — shows Label (header), Internal Note (= the Description field), and Secret Value behind a countdown-timed reveal (observed at 26s remaining, implying a ~30s default) with a progress bar and a manual Hide toggle; Copy and Close actions. This auto-expiring reveal is a security pattern worth adopting directly for Finora’s Vault module — safer than an indefinitely-open plaintext view.
+16.11 Data Model Deltas (Finora, from this session’s captures)
+Entity / Field
+Change
+VaultNote.tag
+Add a nullable single-select tag enum (FINANCE/OFFICIAL/PERSONAL/WORK/SOCIAL/BANKING/MEDICAL/CUSTOM) plus a customTagLabel string for user-defined tags — resolves the Create Note modal’s Tag picker in §16.10.
+VaultNoteView (ephemeral, not persisted)
+Client-side reveal state only — revealUntil timestamp (~30s from reveal), never written to the backend; supports the timed auto-hide pattern in §16.10.
+TripPlanStop
+id, tripId, date, time (nullable), title, category, location, description, estimatedCost, participantIds[], notes — backs the Plan tab (§16.1).
+TripChecklistItem
+id, tripId, title, category, priority (LOW/MEDIUM/HIGH), dueDate (nullable), assignedParticipantIds[], description, done — backs Checklist (§16.3), distinct from TripPackingItem.
+TripPackingItem
+id, tripId, name, category, packed (bool) — backs the Packing list (§16.3), seedable from a fixed template enum (Basic Essentials/Beach Trip/Business/Cold Weather).
+TripExpenseSplit / TripExpensePayment
+Split: expenseId, participantId, shareValue, shareType (SHARES/PERCENTAGE), computedAmount. Payment: expenseId, fromParticipantId, toParticipantId, amount, method, date, status, referenceId, notes — backs the Splits/Pay tabs of Add Expense (§16.2).
+TripParticipant.parentParticipantId
+Nullable self-reference — backs the drag-to-nest dependent/family-member pattern (§16.4).
+16.12 Finora-Specific Build Decisions (this session)
+Vault unlock bot-throttling — add a CAPTCHA (or equivalent, e.g. hidden honeypot + rate-limit escalation) on the vault-unlock endpoint specifically, separate from normal login throttling, matching the extra scrutiny Westro applies here (§16.9).
+Timed secret reveal — implement Vault’s Secret Value reveal as a client-only countdown (no server round-trip needed to re-hide), defaulting to ~30s, mirroring §16.10.
+Generalize dependent-linking beyond Trip Manager — the parentParticipantId self-reference pattern in §16.4 is a good candidate for the shared Profile/family-member model referenced in §2.6, rather than being Trip-Manager-specific.
+Guard all percentage/ratio displays against N/0 — the observed “NaN%” bug on an unset trip budget (§16.2) is a concrete reminder to null-guard every %-utilization display suite-wide (Budget vs Plan, Portfolio, Net Worth, FIRE Planner) rather than only where it was directly observed.
+16.13 Trip Manager — Add Participant Modal (Observed, field-level detail not previously logged)
+Full field list — Name* (“Participant name”), Email (optional), Mobile (optional), Date of Birth (date picker), Preferred Language (optional free text), Food Preferences (free text, e.g. “Vegetarian, Vegan, No nuts, etc.”, helper copy “Dietary restrictions or food preferences”), Category (optional dropdown — Select category (optional) / Tourist / Travel Manager / Driver / Cook / Guide / Other), Cancel / Add actions. This is the field-level detail behind the participant cards already summarized in §12.3/§16.4 (phone, language, food-pref lines shown per card derive directly from this modal).
+16.14 Trip Manager — Verified Example Data (Vietnam trip, preserved for test fixtures)
+Participants (8 travelers, with dependent nesting) — TOURIST (6): Rajesh Kumar (41, Vegetarian, English/Hindi) with dependent Arjun Kumar (11, “of Rajesh Kumar”); Priya Kumar (38, Vegetarian, English/Hindi); Amit Sharma (40, Non-vegetarian, English/Hindi) with dependent Isha Sharma (8, “of Amit Sharma”); Sneha Sharma (37, Non-vegetarian, English/Hindi). TRAVEL MANAGER (1): Vikram Singh (46, Non-vegetarian, English/Hindi/Vietnamese). DRIVER (1): Nguyen Van (36, Non-vegetarian, Vietnamese/English). Confirms the drag-to-nest dependent pattern (§16.4) renders two full family units (Rajesh’s and Amit’s) each with one nested child, alongside standalone adult travelers and role-tagged local staff (manager, driver) who carry their own contact/language data just like tourist participants.
+Plan — Day 1 stops (Saturday, March 15) — 06:00 Flight Departure, Ho Chi Minh City Airport, “Delhi to Ho Chi Minh City — Arrival at 12:30 PM (local time)”; 14:00 Airport Transfer & Hotel Check-in, Hotel Grand Saigon District 1 Ho Chi Minh City, Est. ₹54,000.00, “Take Grab/taxi from airport to hotel in District 1 (30 min drive). Check into hotel — 2 family rooms booked. Freshen up, rest, and adjust to…”; 18:00 Evening City Tour & Dinner, Ben Thanh Market → District 1 → Nha Hang Ngon Restaurant, Est. ₹12,000.00, “Walk to Ben Thanh Market (5 min from hotel). Explore market — buy souvenirs, try local snacks. Walk around District 1 — see Notre-Dame…”. Day 2 (Sunday, March 16) opens with 08:00 Cu Chi Tunnels Half-Day Tour. All stops in this example use category “OTHER” rather than a more specific category, despite the Add Itinerary modal offering Activity/Meal/etc. — suggests category selection is optional/under-used in practice, worth defaulting sensibly in Finora rather than assuming users will categorize every stop.
+Trip header stats (Vietnam) — status badge “Completed”; title “Vietnam (Ho Chi Minh, Hanoi, Ha Long Bay)”; subtitle “Family Adventure in Vietnam”; meta row — Mar 15–Mar 22, 2025, 8 travelers, ₹3,26,150.00 of ₹4,50,000.00; description “7-day family trip exploring Vietnam’s culture, food, and scenic beauty”; dashboard tiles — Next on Plan: Flight Departure, Mar 15, 2025; Budget: 72% used, ₹1,23,850 left; Checklist: 10 open / 15 total; Packing: No list yet.
+17. Consolidated Open Questions (Updated — supersedes items in §10/§14 that this session resolved)
+Resolved this session: Trip Manager Plan/Money/Pack & Prep field-level layouts (§16.1–§16.3), FIRE Planner’s exact mode-to-field assignment (§16.6), Vault Settings/Unlock/Note-create-view screens (§16.8–§16.10).
+Still open — Trip Manager Settle sub-tab’s own screen (only inferred via Insights’ balance tables, §16.2); AI sparkle/regenerate icon behavior on an existing trip (§12.4, unresolved); exact Projected-column formula behind the Budget vs Plan table (§16.5 shows it populated only at Total/Miscellaneous level, cause not confirmed).
+Still open — FIRE Planner the 6–10% vs. 8–12% return-assumption copy mismatch (§11.2/§15.1) remains a Finora decision, not a Westro-confirmed answer.
+Still open — Vault exact CAPTCHA provider/mechanism (hCaptcha/reCAPTCHA/custom) is not identifiable from a screenshot alone and doesn’t need to be replicated exactly — any equivalent bot-check satisfies the Finora decision in §16.12.
+EMI Manager — still entirely unexplored (Coming Soon status in Westro); no screenshots captured to date.
+Finora — living reference document. Compiled from westro.in screenshots/fetches (feature reference only, not a copy of branding/code/copy) plus original Finora product decisions, through August 23, 2026. Update as remaining modules (EMI Manager) are explored.

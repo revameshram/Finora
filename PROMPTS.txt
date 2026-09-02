@@ -1,0 +1,399 @@
+# Finora — Build Prompts (Phase by Phase, Module by Module)
+
+> Copy one prompt at a time into your AI-IDE session. Every prompt starts with the same mandatory pre-flight — do not skip it, even if you think you remember the current state. `PROJECT.md` and `SYNC_LOG.md` are the only source of truth for "what's actually built" since the two of you aren't working simultaneously.
+
+---
+
+## How to use this doc
+
+- Prompts are grouped: **Phase 0** (Alok, solo) → **Phase 1** (Track A / Reva, and Track B / Alok, in parallel-by-turns) → **Phase 2** (joint).
+- Every prompt = Pre-Flight → Step 0 (written plan) → Build → Post-Flight. Do not let the AI-IDE skip Step 0 or the Post-Flight — both are load-bearing for the other person's next session.
+- Reference docs a prompt may point to: `Finora_Master_Reference.docx` (UX/data-model detail per module), `Finora_Team_Build_Plan.docx` (track/phase/contract structure), `PROJECT.md` (live status), `SYNC_LOG.md` (session history).
+
+---
+
+## Universal Pre-Flight (prepend to every single prompt below)
+
+```
+Before doing anything else:
+1. Read PROJECT.md in full — note the current status of the module you're about to
+   work on, and of any module it depends on.
+2. Read SYNC_LOG.md in full — especially any entry where "Affects other track?" is
+   Yes, or "Contract impact?" is not none. Surface anything relevant to what I'm
+   about to build before we start.
+3. If PROJECT.md or SYNC_LOG.md contradict what I'm about to ask you to build,
+   stop and flag it to me before writing any code.
+Confirm you've read both files and summarize the current state back to me in
+3-5 bullets before we proceed to Step 0.
+```
+
+## Universal Post-Flight (append to every single prompt below)
+
+```
+Before ending this session:
+1. Update PROJECT.md — set this module's status (Not started / In progress /
+   Feature-complete / Polishing / Done), tick off implemented features in §5,
+   move anything deferred into §6 On Hold with a reason.
+2. Add a new entry at the top of the Log section in SYNC_LOG.md using the
+   template — fill in "Affects other track?" and "Contract impact?" honestly,
+   even if the answer is No/none.
+3. If anything in §8 Open Questions in PROJECT.md got resolved this session,
+   check it off and note the decision inline.
+```
+
+---
+
+# Phase 0 — Shared Foundation
+
+**Owner:** Alok, solo (per team decision — no simultaneous work).
+
+### Prompt 0.1 — Repo Scaffolding & Package Convention
+
+```
+[Universal Pre-Flight]
+
+Step 0: Before writing any code, write out a plan covering: monorepo vs.
+split-repo decision and why, the Spring Boot 3.x + React 18/TS/Vite project
+skeleton layout, and how the com.finora.<module>.* package convention maps
+onto folders for all 8 modules (Portfolio Tracker, Net Worth Tracker, Goal
+Manager, FIRE Planner, Expense Tracker, Trip Manager, Vault, EMI Manager).
+Show me this plan before scaffolding anything.
+
+Build: scaffold the repo(s), backend and frontend skeletons, and an empty
+package/folder per module following the convention. No feature code yet.
+
+[Universal Post-Flight]
+```
+
+### Prompt 0.2 — Auth/JWT + Shared Profile/Workspace Table
+
+```
+[Universal Pre-Flight]
+
+Step 0: Write a plan for JWT issuance and validation (issuance lives outside
+any single module; each module only validates a token), and for the one
+shared User/Profile table at the umbrella-app level that every module's
+tables will reference via user_id/profile_id. Include the table schema with
+worked field examples before writing migration code.
+
+Build: implement Auth/JWT issuance + validation end-to-end against a dummy
+user, and the shared Profile/Workspace table + migration.
+
+[Universal Post-Flight]
+```
+
+### Prompt 0.3 — Currency Service
+
+```
+[Universal Pre-Flight]
+
+Step 0: Plan the currency service — store amounts in a single baseCurrency
+per user (default INR), convert only for display. Show a worked example:
+a ₹50,000 stored amount displayed in USD at a given rate.
+
+Build: the currency service and the display-conversion utility every module
+will call.
+
+[Universal Post-Flight]
+```
+
+### Prompt 0.4 — Universal Linking Mechanism
+
+```
+[Universal Pre-Flight]
+
+Step 0: This is the single most important shared piece — do not rush it.
+Plan the isIncluded / isLinked / sourceModule mechanism as a shared backend
+concern (interface or base entity/trait), not per-module. Walk through the
+concrete case: a Portfolio holding shown as a read-only linked asset inside
+Net Worth Tracker. Also make and document the Delink decision explicitly:
+does Delink convert a linked record to a standalone manual copy, or remove
+it outright? This decision is inherited by both tracks — get it right here.
+
+Build: the shared linking interface/base entity, and record the Delink
+decision in PROJECT.md §8 as resolved.
+
+[Universal Post-Flight]
+```
+
+### Prompt 0.5 — Shared Frontend Components
+
+```
+[Universal Pre-Flight]
+
+Step 0: Plan the shared component package: Toast/notification, Insights-card
+(used by Expense Tracker, Net Worth Tracker, FIRE Planner, Goal Manager),
+empty-state (icon + headline + subtext + single CTA), onboarding-drawer
+(numbered How-to-use + Tips checklist). Confirm each one's props/API surface
+before building, since every module downstream will consume these as-is.
+
+Build: the shared component package with all four components.
+
+[Universal Post-Flight]
+```
+
+### Prompt 0.6 — Cross-Track API Contracts (Stub Only)
+
+```
+[Universal Pre-Flight]
+
+Step 0: Plan both contracts as OpenAPI specs (no real implementation yet):
+1. Expense Tracker Summary API (owned by Track B / Alok, consumed by Goal
+   Manager + FIRE Planner in Track A) — must expose: current-month
+   income/outflow totals; list of goal-linked transactions (id, amount,
+   date, linkedGoalId); trailing-12-month average annual spend.
+2. Net Worth Tracker Liabilities/Assets API (owned by Track A / Reva,
+   consumed by EMI Manager in Track B) — must expose: current liabilities
+   list (id, category, balance, isIncluded); ability for EMI Manager to push
+   a new liability record flagged sourceModule = EMI_MANAGER.
+
+Build: both specs as mock endpoints returning realistic fixture data, so
+each track can build against the other's contract without waiting.
+
+[Universal Post-Flight — and explicitly flag Contract impact: yes for both
+contracts in the SYNC_LOG entry, since Reva will consume these directly.]
+```
+
+---
+
+# Phase 1 — Track A (Reva): Portfolio → Net Worth → Goal Manager → FIRE Planner
+
+Strictly sequential, same developer carries context forward.
+
+### Prompt A.1 — Portfolio Tracker
+
+```
+[Universal Pre-Flight — also confirm Phase 0 is marked Done in PROJECT.md
+before starting; if not, stop and flag it.]
+
+Step 0: Consult Finora_Master_Reference.docx for Portfolio Tracker's full
+UX/data-model detail. Write a plan covering: asset classes (Indian Stocks,
+Mutual Funds, ETFs, NPS/UPS, US Stocks/ETFs, Deposits, Bonds, Metals), the
+Strategy+Factory+Caffeine price-provider pattern, dashboard layout, Growth
+Outlook, Drawdown Check, and holdings tables. Include the universal
+"use live price as purchase price" checkbox and inline live-price display
+conventions (locked-in decisions — apply to every add-holding form).
+
+Build: Portfolio Tracker per the plan. This ships first — Net Worth Tracker
+needs it as a linkable source, so its data model must be stable before you
+move to Prompt A.2.
+
+[Universal Post-Flight]
+```
+
+### Prompt A.2 — Net Worth Tracker
+
+```
+[Universal Pre-Flight — confirm Portfolio Tracker status is Feature-complete
+or Done in PROJECT.md before starting.]
+
+Step 0: Consult Finora_Master_Reference.docx for Net Worth Tracker. Plan:
+Assets/Liabilities/Summary tabs, manual + Portfolio-linked assets (using the
+shared linking mechanism from Phase 0 — Portfolio-linked value is held flat,
+confirm this nuance), widened category enums, the projection engine (3
+growth scenarios), category breakdown, top holdings. This module owns the
+shared growth engine (compound-growth + FV-of-annuity) that Goal Manager and
+FIRE Planner will consume as a library — design its public interface now,
+since two future modules depend on it.
+
+Build: Net Worth Tracker + the growth engine library. Consumes Portfolio
+Tracker directly — same developer, same context, no contract needed.
+
+[Universal Post-Flight — explicitly note the growth engine's public
+interface in PROJECT.md, since FIRE Planner (Prompt A.4) reuses it.]
+```
+
+### Prompt A.3 — Goal Manager
+
+```
+[Universal Pre-Flight — also check SYNC_LOG.md specifically for any entry
+from Alok about the Expense Tracker Summary API contract changing shape.]
+
+Step 0: Consult Finora_Master_Reference.docx for Goal Manager. Plan:
+dashboard (header KPIs, capacity bar, allocation donut, per-goal summary
+cards, alerts/nudges feed), Goal Settings, Goal Detail (history, actual vs.
+planned chart, milestones), Timeline view, Create Goal modal, and the single
++ bulk Contribute modals. Confirm the domain rule: GoalTag transactions from
+Expense Tracker tag goals for reporting only and never affect goal balance —
+goal balance is driven solely by Funding and linked Portfolio holdings.
+
+Build: Goal Manager against Net Worth/Portfolio (internal, direct) and
+against the mocked Expense Tracker Summary API contract from Phase 0 for
+goal-linked transactions.
+
+[Universal Post-Flight]
+```
+
+### Prompt A.4 — FIRE Planner
+
+```
+[Universal Pre-Flight]
+
+Step 0: Consult Finora_Master_Reference.docx for FIRE Planner. Plan both
+calculator modes (Target-Years-to-FIRE → Required Monthly Savings; Monthly
+Savings → Years to FIRE), the two-column Input Parameters / results layout,
+FIRE Number / Years to FIRE / About FIRE cards, and the Summary tab (insights
+feed + Savings Growth Projection dual-line chart, Progress bar chart +
+Savings Breakdown). Resolve the return-assumption inconsistency (pick one
+rate range and apply it consistently) and document the decision. Reuse the
+growth engine's public interface from Net Worth Tracker (Prompt A.2) rather
+than reimplementing it.
+
+Build: FIRE Planner against Net Worth/Portfolio (internal) and the mocked
+Expense Tracker annual-spend figure (external contract, mocked initially).
+
+[Universal Post-Flight]
+```
+
+---
+
+# Phase 1 — Track B (Alok): Expense Tracker → Vault / Trip Manager / EMI Manager
+
+Expense Tracker first (cash-flow backbone + the module Track A's contract depends on). The remaining three build in any order — Vault and Trip Manager are fully standalone.
+
+### Prompt B.1 — Expense Tracker
+
+```
+[Universal Pre-Flight — also confirm Phase 0 is marked Done before starting.]
+
+Step 0: Consult Finora_Master_Reference.docx for Expense Tracker. Plan:
+Budget Month scoping, Income Sources (Name, Amount, optional Instrument),
+Transactions (Item, Description, Category, Amount, Payment method,
+Pending/Done status), optional Goal Manager linking, Tasks, Notes
+(freeform, timestamped, append-only per month), Summary tab (Category
+Breakdown donut + Transaction Status donut), and the Financial Insights
+panel. This module's API surface (the Summary API contract from Phase 0)
+needs to be stable early since Track A builds against it — flag anything in
+this plan that would change the contract's shape before building.
+
+Build: Expense Tracker per the plan, then implement the real Expense
+Tracker Summary API behind the Phase 0 mock's contract shape (don't change
+the shape without updating SYNC_LOG.md and flagging it for Reva).
+
+[Universal Post-Flight — explicitly flag Contract impact if the real
+implementation diverges at all from the Phase 0 mock shape.]
+```
+
+### Prompt B.2 — Vault
+
+```
+[Universal Pre-Flight]
+
+Step 0: Consult Finora_Master_Reference.docx for Vault. Plan: zero-knowledge
+framing (never persist the vault master password anywhere retrievable),
+separate master password setup, exactly 3 one-time backup/recovery codes,
+Device Protection + Biometric Unlock (both optional/additive), session-based
+lock state, the two-factor unlock gate (password + CAPTCHA-equivalent
+bot-throttling), Secure Note create/view with timed auto-hide reveal, and
+client-side-only search scoped to labels/descriptions only. Flag the open
+question on exact CAPTCHA provider/mechanism for me to decide before backend
+work starts.
+
+Build: Vault. Fully independent of every other module — no dependency on
+Expense Tracker or anything else, reuses only the shared empty-state and
+onboarding-drawer components from Phase 0.
+
+[Universal Post-Flight]
+```
+
+### Prompt B.3 — Trip Manager
+
+```
+[Universal Pre-Flight]
+
+Step 0: Consult Finora_Master_Reference.docx for Trip Manager. Plan: trip
+creation (manual + AI-assisted), the Overview/Plan/Money/Pack & Prep/
+Checklist tab structure, participants with dependent/family nesting
+(drag-to-nest), the day-by-day itinerary builder (Add Itinerary modal,
+route map), the Money tab (Budget sub-tab, Expenses sub-tab with 4-tab Add
+Expense modal, Smart Split Calculator, Add Payment modal, Settle sub-tab),
+Pack & Prep (packing list with quick-add templates + separate Checklist
+view), and the Insights sub-tab. Guard every percentage/ratio display
+against N/0 (a real observed bug on trips with zero budget set).
+
+Build: Trip Manager. Fully self-contained — no dependency on Expense
+Tracker or any other module's data.
+
+[Universal Post-Flight]
+```
+
+### Prompt B.4 — EMI Manager
+
+```
+[Universal Pre-Flight — also check SYNC_LOG.md specifically for the Net
+Worth Tracker Liabilities/Assets API contract status from Reva's side.]
+
+Step 0: This module is NOT detailed in Finora_Master_Reference.docx —
+it was Coming Soon in Westro and needs to be scoped from first principles.
+Write a plan for: loan schedules, EMI calculation, prepayment handling, and
+amortization math (a separate schedule calculation from the shared growth
+engine — do not conflate the two). Design how EMI Manager pushes a new
+liability record into Net Worth Tracker via the Net Worth Liabilities/Assets
+API contract, flagged sourceModule = EMI_MANAGER, and how it reads its own
+EMI payments against Expense Tracker (internal, same developer — no
+contract needed for that part).
+
+Build: EMI Manager against the mocked Net Worth Tracker contract, and
+directly against your own real Expense Tracker data.
+
+[Universal Post-Flight]
+```
+
+---
+
+# Phase 2 — Integration (Both Developers, Joint)
+
+Do this phase together — it's the one part of the plan that isn't split by track.
+
+### Prompt J.1 — Swap Mocks for Real Contracts
+
+```
+[Universal Pre-Flight — both of you read PROJECT.md and SYNC_LOG.md in full
+before this session, not just your own track's entries.]
+
+Step 0: Diff each contract's mocked shape (from Phase 0) against its real
+implementation (Prompt B.1 for Expense Tracker Summary, Prompt A.2/A.4-
+adjacent work for Net Worth Liabilities/Assets). List every discrepancy
+before touching integration code.
+
+Build: swap Track A's mock of the Expense Tracker contract for the real
+API; swap Track B's mock of the Net Worth Tracker contract for the real API.
+Fix any discrepancies found in Step 0.
+
+[Universal Post-Flight]
+```
+
+### Prompt J.2 — Suite-Wide Insights Tab
+
+```
+[Universal Pre-Flight]
+
+Step 0: Consult Finora_Master_Reference.docx for the Suite-Wide Insights
+spec. Plan the Financial Health Overview (single 0-100 score), the
+cross-module Key Metrics grid (grouped by life-area, each card tagged with
+source module), Trends & Analysis charts (each tagged with source
+module(s)), and the Insights & Recommendations feed. Reconcile the three
+independent scoring layers — Expense Tracker's own health metrics, Net
+Worth Tracker's Health Score, and this suite-wide score — and document
+whether the overlap is intentional or redundant computation.
+
+Build: the Suite-Wide Insights tab, reading real data from both tracks.
+
+[Universal Post-Flight]
+```
+
+### Prompt J.3 — End-to-End Testing
+
+```
+[Universal Pre-Flight]
+
+Step 0: List the specific end-to-end scenarios to test: Delink behavior on
+a Portfolio-linked Net Worth asset and a Goal-linked Expense transaction;
+EMI Manager → Net Worth Tracker liability sync; Goal Manager and FIRE
+Planner reading real (not mocked) Expense Tracker data.
+
+Build: write and run these end-to-end tests. Log any failures as new
+entries in PROJECT.md §8 Open Questions with owner and next step.
+
+[Universal Post-Flight]
+```
