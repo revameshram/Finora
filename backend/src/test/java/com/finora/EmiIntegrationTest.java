@@ -133,6 +133,6 @@ public class EmiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].loanName", containsString("Home Loan")))
-                .andExpect(jsonPath("$[1].loanName", containsString("Car Loan")));
+                .andExpect(jsonPath("$[1].loanName", containsString("Auto Loan")));
     }
 }

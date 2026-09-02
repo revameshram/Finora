@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.finora.VaultIntegrationTest
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.671 s -- in com.finora.VaultIntegrationTest
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.699 s -- in com.finora.VaultIntegrationTest

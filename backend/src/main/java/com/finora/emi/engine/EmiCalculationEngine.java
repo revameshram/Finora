@@ -77,7 +77,7 @@ public class EmiCalculationEngine {
             BigDecimal emi = currentEmi;
             BigDecimal principalPortion;
 
-            if (opening.add(interest).compareTo(emi) <= 0) {
+            if (opening.add(interest).compareTo(emi) <= 0 || (monthIndex == tenureMonths && opening.compareTo(emi.multiply(BigDecimal.valueOf(1.1))) <= 0)) {
                 // Final payoff installment
                 principalPortion = opening;
                 emi = opening.add(interest);

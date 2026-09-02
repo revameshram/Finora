@@ -8,10 +8,13 @@ import { WorkspaceHub } from './components/workspace/WorkspaceHub';
 import { ExpenseTracker } from './components/expense/ExpenseTracker';
 import { Vault } from './components/vault/Vault';
 import { TripManager } from './components/trip/TripManager';
+import { EmiManager } from './components/emi/EmiManager';
+import { LearnCenter } from './components/learn/LearnCenter';
 import {
   HelpCircle,
   LogOut,
   ChevronLeft,
+  BookOpen,
   Compass,
 } from 'lucide-react';
 
@@ -30,8 +33,8 @@ const SUITE_ONBOARDING_STEPS = [
   },
   {
     stepNumber: 3,
-    title: 'Expense Tracker, Vault & Trip Manager (Track B)',
-    description: 'Scope budget months, store encrypted recovery credentials, and plan group travel itineraries with smart split calculations.',
+    title: 'Track B Suite: Cash Flow, Debt & Security',
+    description: 'Scope budget months, plan group trips, calculate loan amortization schedules, and store encrypted credentials in your private vault.',
   },
 ];
 
@@ -43,8 +46,10 @@ const SUITE_TIPS = [
 
 const AuthenticatedApp: React.FC = () => {
   const { user, logout } = useAuth();
-  const [currentView, setCurrentView] = useState<'workspace' | 'expense-tracker' | 'vault' | 'trip-manager'>('workspace');
+  const [currentView, setCurrentView] = useState<'workspace' | 'expense-tracker' | 'vault' | 'trip-manager' | 'emi-manager' | 'learn'>('workspace');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+
+  const avatarSrc = user?.avatarUrl || (user?.email?.includes('reva') ? '/avatars/profile-mid-adult-female.webp' : '/avatars/profile-mid-adult-male.webp');
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-[#1C1917] flex flex-col selection:bg-[#FEF3C7] selection:text-[#B45309]">
@@ -85,9 +90,22 @@ const AuthenticatedApp: React.FC = () => {
             )}
           </div>
 
-          {/* Right Utilities: Currency Selector, Onboarding, Profile & Logout */}
+          {/* Right Utilities: Currency Selector, Learn Center, Onboarding, Profile & Logout */}
           <div className="flex items-center space-x-3">
             <CurrencySelector />
+
+            <button
+              type="button"
+              onClick={() => setCurrentView('learn')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors shadow-2xs ${
+                currentView === 'learn'
+                  ? 'bg-amber-100 text-amber-900 border-amber-300'
+                  : 'text-[#78716C] hover:text-[#1C1917] bg-[#FAFAF9] hover:bg-white border-[#E7E5E4]'
+              }`}
+            >
+              <BookOpen className="h-3.5 w-3.5 text-[#B45309]" />
+              <span className="hidden sm:inline">Learn</span>
+            </button>
 
             <button
               type="button"
@@ -100,9 +118,15 @@ const AuthenticatedApp: React.FC = () => {
 
             <div className="flex items-center pl-2 border-l border-[#E7E5E4] gap-2">
               <div className="flex items-center gap-2 px-2.5 py-1 bg-[#FAFAF9] rounded-lg border border-[#E7E5E4]">
-                <div className="h-6 w-6 rounded-full bg-[#FEF3C7] text-[#B45309] flex items-center justify-center font-bold text-xs">
-                  {user?.fullName?.[0] || 'A'}
-                </div>
+                <img
+                  src={avatarSrc}
+                  alt="User avatar"
+                  className="h-7 w-7 rounded-full border border-stone-300 object-cover bg-amber-50"
+                  onError={(e) => {
+                    // Fallback to initial
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
                 <div className="hidden md:flex flex-col">
                   <span className="text-xs font-bold text-[#1C1917] leading-tight">
                     {user?.fullName || 'Alok Sharma'}
@@ -129,11 +153,18 @@ const AuthenticatedApp: React.FC = () => {
       {/* Main Workspace Body */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {currentView === 'workspace' && (
-          <WorkspaceHub onNavigateToModule={(mod) => setCurrentView(mod as 'workspace' | 'expense-tracker' | 'vault' | 'trip-manager')} />
+          <WorkspaceHub onNavigateToModule={(mod) => setCurrentView(mod as 'workspace' | 'expense-tracker' | 'vault' | 'trip-manager' | 'emi-manager')} />
         )}
         {currentView === 'expense-tracker' && <ExpenseTracker />}
         {currentView === 'vault' && <Vault />}
         {currentView === 'trip-manager' && <TripManager />}
+        {currentView === 'emi-manager' && <EmiManager />}
+        {currentView === 'learn' && (
+          <LearnCenter
+            onBackToWorkspace={() => setCurrentView('workspace')}
+            onNavigateToModule={(mod) => setCurrentView(mod as any)}
+          />
+        )}
       </main>
 
       {/* Persistent Footer */}

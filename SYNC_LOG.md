@@ -35,6 +35,92 @@
 
 ## Log
 
+### 2026-09-02 — Alok — Westro Integration & Learn Center
+
+**Worked on:** Westro Persona Avatars, Interactive 8-Guide Learn Center (`/learn`), and Landing Page elevation.
+
+**Changes made:**
+- **Assets (`frontend/public/avatars/`):**
+  - Transferred 6 persona avatars (`profile-child-*.webp`, `profile-mid-adult-*.webp`, `profile-older-*.webp`) and illustration graphics from scraped Westro.
+- **Learn Center (`frontend/src/components/learn/`):**
+  - Built `LearnCenter.tsx` with search, category filtering (`All`, `Cash Flow`, `Growth`, `Security`), and 8 deep-dive educational guides in `learnGuides.ts`:
+    1. Digital Safety & Vault Cryptography (PBKDF2-SHA256, AES-GCM-256)
+    2. Cash Flow Mastery & Budget Scoping (50/30/20, Pending drag, Emergency runway)
+    3. Loan Schedules & Prepayment Acceleration (Reducing balance math, 1-extra-EMI rule)
+    4. Group Travel Splits & Multi-Currency Economics (Base currency anchor, Settle matrix)
+    5. Multi-Asset Portfolio Architecture (Core & Satellite, Global diversification)
+    6. Consolidated Balance Sheet & Net Worth (Liquid vs Illiquid, Debt-to-Asset ratio)
+    7. Milestone Goals & Reverse SIP Engineering (Inflation-adjusted target costing)
+    8. Retirement Modeling & The FIRE Roadmap (4% SWR, Trinity study, 3-bucket strategy)
+  - Built `LearnGuideDetail.tsx` with highlights, rules of thumb, step-by-step checklists, and "Launch Module" CTAs.
+- **Landing Page & Navigation (`LandingPage.tsx` & `App.tsx`):**
+  - Upgraded Landing Page with Westro's hero section, persona avatar strip, and 8-module suite explorer.
+  - Added "Learn" navigation buttons in top headers, WorkspaceHub footer, and Landing Page.
+  - Linked persona avatars into the top navigation bar and user profile dropdowns.
+  - Verified frontend build with `npm run build` (0 errors) and backend test suite with `mvn test` (25/25 tests passing).
+
+**Affects other track?** No
+- Track A (Reva) can now seamlessly link its upcoming modules (Portfolio Tracker, Net Worth Tracker, Goal Manager, FIRE Planner) into the pre-built Learn Center guides and avatar system.
+
+**Contract impact?** none
+
+**Blocked on:**
+- None. Ready for Reva to begin Track A!
+
+**Next session:**
+- Reva to start Phase 1 Track A: Prompt A.1 (Portfolio Tracker).
+
+---
+
+### 2026-09-02 — Alok — Track B / Phase 1
+
+**Worked on:** Prompt B.4 EMI Manager Module (Reducing Balance Amortization Engine, Prepayment Optimization Sandbox, Net Worth Liability Contract Sync, and Expense Tracker Cash-Flow Matching)
+
+**Changes made:**
+- **Backend Architecture (`com.finora.emi.*`):**
+  - JPA Entities: `Loan` (`em_loans` extending `LinkableEntity`), `LoanPrepayment` (`em_loan_prepayments`), and `LoanEmiLog` (`em_loan_emi_logs`).
+  - `EmiCalculationEngine`:
+    - Independent reducing balance formula $E = P \cdot r \cdot \frac{(1+r)^n}{(1+r)^n - 1}$ isolated from compound growth models.
+    - Month-by-month and year-by-year Amortization schedule generator with exact principal, interest, prepayment, and residual balance absorption.
+    - Prepayment optimizer simulating **Tenor Reduction** (keeping EMI constant to shorten months) vs **EMI Reduction** (lowering monthly commitment for cash flow).
+    - Standalone mathematical calculation engine for instant slider-based simulation.
+  - `EmiService`:
+    - Loan CRUD and DTO mapping with lifetime interest payable, payoff projections, and progress percentages.
+    - Automatic cross-track synchronization with **Net Worth Tracker Liabilities API Contract** (`POST /api/v1/networth/liabilities`) with `sourceModule = EMI_MANAGER` and `isLinked = true`.
+    - Internal cash-flow reconciliation scanning `et_transactions` in `ExpenseTracker` to discover and link recurring bank EMI debits.
+    - 1-Click Sample Data Seeder (₹50,00,000 HDFC Home Loan @ 8.5% with ₹5L prepayment + ₹8,50,000 ICICI Auto Loan @ 9.2%).
+  - `EmiController`: REST endpoints at `/api/v1/emi/*`.
+  - Integration Tests: `EmiIntegrationTest` (25/25 backend integration tests passing with `BUILD SUCCESS`).
+- **Frontend Architecture (`frontend/src/components/emi/`):**
+  - `LoanList.tsx`: 4 KPI summary cards (Total Debt, Monthly Outflow, Interest Payable, Avg Interest Rate), active loan cards with repayment progress meters, and view toggle (Portfolio vs Standalone Calculator).
+  - `AddLoanModal.tsx`: Create loan modal with live EMI & interest previews and Net Worth sync checkbox.
+  - `LoanDetail.tsx`: 6-action header, hero banner (Lender, Rate, Tenor, Monthly EMI, Outstanding vs Sanctioned progress bar), and 3 navigation tabs:
+    - `AmortizationTab`: Calendar-year accordions with month-by-month table and CSV export.
+    - `PrepaymentSimulatorTab`: Interactive scenario sandbox (amount, strategy, frequency) with real-time interest savings ticker + recorded prepayments ledger.
+    - `ExpenseReconciliationTab`: Internal Expense Tracker scanner matching bank debits.
+  - `StandaloneEmiCalculator.tsx`: Interactive sliders for loan amount, interest rate, and tenure with Principal vs Interest breakdown.
+  - Router Integration: Linked EMI Manager into `App.tsx` and `WorkspaceHub.tsx` (`Manage Loans` CTA).
+  - Verified frontend build with `npm run build` (0 TypeScript / Vite errors).
+
+**Affects other track?** Yes
+- If yes — what changed and what the other person needs to do about it:
+  - **For Reva (Track A):**
+    - EMI Manager actively pushes created loan liabilities to `POST /api/v1/networth/liabilities` with `sourceModule = EMI_MANAGER` and `isLinked = true`.
+    - Currently, this runs against the Phase 0.6 `NetWorthContractMockController`.
+    - When Reva implements the real **Net Worth Tracker** backend, she can replace the mock controller with the real database-backed liability store, preserving the exact `CreateLiabilityRequest` and `NetWorthLiabilityDto` contracts.
+  - **Track B is now 100% Feature-Complete!** All 4 Track B modules (**Expense Tracker**, **Vault**, **Trip Manager**, **EMI Manager**) are built, tested, and verified.
+
+**Contract impact?** Net Worth Liabilities/Assets API
+- Verified contract compatibility with `POST /api/v1/networth/liabilities`.
+
+**Blocked on:**
+- None. Track B is 100% Done!
+
+**Next session:**
+- Track A: Reva can begin Phase 1 with Prompt A.1 (Portfolio Tracker).
+
+---
+
 ### 2026-09-02 — Alok — Track B / Phase 1
 
 **Worked on:** Prompt B.3 Trip Manager Module (Itinerary Builder, Family Drag-to-Nest, 4-Tab Expense Modal, Smart Split Solver, Settle Debt Matrix, Pack & Prep Templates, Priority Checklist, and Insights with N/0 Divide-by-Zero Guards)

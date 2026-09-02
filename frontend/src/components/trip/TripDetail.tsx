@@ -146,7 +146,7 @@ export const TripDetail: React.FC<TripDetailProps> = ({ tripId, onBack }) => {
 
     try {
       await tripApi.deleteTrip(trip.id);
-      toast.success('Trip deleted');
+      toast.info('Trip deleted.');
       onBack();
     } catch (err) {
       console.error(err);

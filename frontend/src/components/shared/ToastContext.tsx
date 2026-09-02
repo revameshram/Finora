@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { CheckCircle2, AlertTriangle, AlertCircle, Info, X } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -29,42 +29,59 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-const TOAST_STYLES: Record<
+const TOAST_THEMES: Record<
   ToastType,
-  { icon: typeof CheckCircle2; bg: string; border: string; iconColor: string; titleColor: string }
+  {
+    icon: typeof Info;
+    defaultTag: string;
+    containerClass: string;
+    iconCircleClass: string;
+    tagClass: string;
+    textClass: string;
+    iconClass: string;
+  }
 > = {
+  info: {
+    icon: Info,
+    defaultTag: 'HEADS UP',
+    containerClass: 'bg-[#EBF7FD] border-[#BAE6FD] text-[#0C4A6E] shadow-xl shadow-sky-950/5',
+    iconCircleClass: 'bg-[#D0EEFA] text-[#0284C7]',
+    tagClass: 'bg-[#D0EEFA] text-[#0369A1]',
+    textClass: 'text-[#0F172A]',
+    iconClass: 'w-4 h-4',
+  },
   success: {
     icon: CheckCircle2,
-    bg: 'bg-white',
-    border: 'border-l-4 border-l-[#B45309] border-[#E7E5E4]',
-    iconColor: 'text-[#B45309]',
-    titleColor: 'text-[#1C1917]',
-  },
-  error: {
-    icon: AlertCircle,
-    bg: 'bg-white',
-    border: 'border-l-4 border-l-[#BE123C] border-[#E7E5E4]',
-    iconColor: 'text-[#BE123C]',
-    titleColor: 'text-[#1C1917]',
+    defaultTag: 'SUCCESS',
+    containerClass: 'bg-[#F0FDF4] border-[#BBF7D0] text-[#14532D] shadow-xl shadow-emerald-950/5',
+    iconCircleClass: 'bg-[#DCFCE7] text-[#16A34A]',
+    tagClass: 'bg-[#DCFCE7] text-[#15803D]',
+    textClass: 'text-[#0F172A]',
+    iconClass: 'w-4 h-4',
   },
   warning: {
     icon: AlertTriangle,
-    bg: 'bg-white',
-    border: 'border-l-4 border-l-[#B45309] border-[#E7E5E4]',
-    iconColor: 'text-[#B45309]',
-    titleColor: 'text-[#1C1917]',
+    defaultTag: 'ATTENTION',
+    containerClass: 'bg-[#FFFBEB] border-[#FDE68A] text-[#78350F] shadow-xl shadow-amber-950/5',
+    iconCircleClass: 'bg-[#FEF3C7] text-[#D97706]',
+    tagClass: 'bg-[#FEF3C7] text-[#B45309]',
+    textClass: 'text-[#0F172A]',
+    iconClass: 'w-4 h-4',
   },
-  info: {
-    icon: Info,
-    bg: 'bg-white',
-    border: 'border-l-4 border-l-[#1C1917] border-[#E7E5E4]',
-    iconColor: 'text-[#1C1917]',
-    titleColor: 'text-[#1C1917]',
+  error: {
+    icon: AlertCircle,
+    defaultTag: 'ERROR',
+    containerClass: 'bg-[#FFF1F2] border-[#FECDD3] text-[#881337] shadow-xl shadow-rose-950/5',
+    iconCircleClass: 'bg-[#FFE4E6] text-[#E11D48]',
+    tagClass: 'bg-[#FFE4E6] text-[#BE123C]',
+    textClass: 'text-[#0F172A]',
+    iconClass: 'w-4 h-4',
   },
 };
 
 export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const recentToastsRef = useRef<Map<string, number>>(new Map());
 
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -72,10 +89,29 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const showToast = useCallback(
     (options: Omit<ToastItem, 'id'>): string => {
+      const dedupeKey = `${options.type}::${options.message}`;
+      const now = Date.now();
+      const lastSeen = recentToastsRef.current.get(dedupeKey);
+
+      // Deduplication: prevent identical toast popping up twice within 1500ms
+      if (lastSeen && now - lastSeen < 1500) {
+        return '';
+      }
+      recentToastsRef.current.set(dedupeKey, now);
+
+      // Clean old keys from map periodically
+      if (recentToastsRef.current.size > 20) {
+        recentToastsRef.current.forEach((timestamp, key) => {
+          if (now - timestamp > 5000) {
+            recentToastsRef.current.delete(key);
+          }
+        });
+      }
+
       const id = 'toast_' + Math.random().toString(36).substring(2, 9);
       const newToast: ToastItem = { ...options, id };
 
-      // Keep at most 3 active toasts at any time to prevent flood
+      // Keep at most 3 active toasts at a time
       setToasts((prev) => [...prev.slice(-2), newToast]);
 
       const duration = options.duration ?? 4000;
@@ -112,22 +148,37 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   return (
     <ToastContext.Provider value={contextValue}>
       {children}
-      {/* Toast Viewport */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+      {/* Toast Viewport (Top-Right Floating) */}
+      <div className="fixed top-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none transition-all">
         {toasts.map((t) => {
-          const style = TOAST_STYLES[t.type];
-          const Icon = style.icon;
+          const theme = TOAST_THEMES[t.type];
+          const Icon = theme.icon;
+          const displayTag = t.title ? t.title.toUpperCase() : theme.defaultTag;
 
           return (
             <div
               key={t.id}
               role="alert"
-              className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-lg border shadow-lg transition-all ${style.bg} ${style.border}`}
+              className={`pointer-events-auto flex items-start gap-3 p-3.5 sm:p-4 rounded-2xl border transition-all duration-300 animate-in fade-in slide-in-from-top-3 ${theme.containerClass}`}
             >
-              <Icon className={`h-4 w-4 flex-shrink-0 mt-0.5 ${style.iconColor}`} />
-              <div className="flex-1 min-w-0">
-                {t.title && <h4 className={`text-xs font-bold ${style.titleColor}`}>{t.title}</h4>}
-                <p className="text-xs text-[#78716C] leading-relaxed mt-0.5">{t.message}</p>
+              {/* Left Circular Icon Badge */}
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${theme.iconCircleClass}`}
+              >
+                <Icon className={theme.iconClass} />
+              </div>
+
+              {/* Center Content Column */}
+              <div className="flex-1 min-w-0 pr-1">
+                <span
+                  className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${theme.tagClass}`}
+                >
+                  {displayTag}
+                </span>
+                <p className={`text-sm font-bold tracking-tight mt-1 leading-snug ${theme.textClass}`}>
+                  {t.message}
+                </p>
+
                 {t.action && (
                   <button
                     type="button"
@@ -135,19 +186,21 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                       t.action?.onClick();
                       dismissToast(t.id);
                     }}
-                    className="mt-1.5 text-xs font-semibold text-[#1C1917] underline hover:no-underline"
+                    className="mt-1.5 text-xs font-bold underline hover:no-underline block"
                   >
                     {t.action.label}
                   </button>
                 )}
               </div>
+
+              {/* Right Close Button */}
               <button
                 type="button"
                 onClick={() => dismissToast(t.id)}
-                className="text-[#78716C]/60 hover:text-[#1C1917] p-0.5 rounded transition-colors"
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg transition-colors flex-shrink-0"
                 aria-label="Close notification"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           );

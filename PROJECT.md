@@ -62,7 +62,7 @@ Owner: Alok (doing all Phase 0 init work solo — see §7).
 | Expense Tracker | Done | — | Cash-flow backbone + DB-backed Summary API contract fulfilled |
 | Vault | Done | — | Zero-knowledge client-side encryption + timed reveal + bot-throttled unlock gate |
 | Trip Manager | Done | — | Fully self-contained multi-currency travel planner & group ledger |
-| EMI Manager | Not started | Net Worth Tracker (liabilities, mocked), Expense Tracker (internal) | Scope from first principles — not yet detailed in Master Reference |
+| EMI Manager | Done | Net Worth Tracker (liabilities contract), Expense Tracker (internal) | Institutional-grade reducing balance amortization engine, prepayment sandbox, Net Worth sync & Expense cash-flow matching |
 
 ### Joint
 
@@ -124,17 +124,31 @@ Owner: Alok (doing all Phase 0 init work solo — see §7).
 - [x] Checklist Tab: Priority-badged tasks (`High`, `Medium`, `Low`) with due dates and participant assignees
 - [x] Container & Header Bar: 6-action header (Back, Edit, AI Regenerate Ideas, Export Report, Delete, Onboarding Guide)
 
+### EMI Manager
+**Status:** Done
+**Implemented:**
+- [x] Dedicated Amortization Math Engine (`EmiCalculationEngine`): reducing balance formula $E = P \cdot r \cdot \frac{(1+r)^n}{(1+r)^n - 1}$ completely isolated from compound growth
+- [x] Loan Management: CRUD with 7 loan categories (`Home Loan`, `Car Loan`, `Personal Loan`, `Education Loan`, `Gold Loan`, `Business Loan`, `Other Debt`) and status tracking
+- [x] Cross-Track Net Worth Tracker Contract Integration: Automatically pushes loan liability records to `POST /api/v1/networth/liabilities` with `sourceModule = EMI_MANAGER` and `isLinked = true`
+- [x] Internal Expense Tracker Cash-Flow Reconciliation: Discovers and reconciles recurring bank EMI debits directly from `et_transactions`
+- [x] Full Amortization Explorer: Calendar-year accordions with month-by-month Principal, Interest, Prepayment, and Closing Balance breakdown + One-click CSV export
+- [x] Prepayment Simulator & Optimization Sandbox: Live sliders simulating lump sums, annual bonuses, or extra monthly payments, comparing **Tenor Reduction** (maximum interest savings) vs **EMI Reduction** (cash flow relief)
+- [x] Prepayments Ledger: Add permanent lump sums and recurring prepayment records with automatic schedule recalculation
+- [x] Standalone EMI Calculator: Pure mathematical sandbox with interactive loan principal, interest rate, and tenure sliders with visual Principal vs Interest breakdown
+- [x] 1-Click Sample Data Seeder: Seeds realistic Indian loans (₹50,00,000 HDFC Home Loan @ 8.5% with ₹5L prepayment + ₹8,50,000 ICICI Auto Loan @ 9.2%)
+- [x] Loan Portfolio Dashboard: 4 KPI summary cards (Total Debt, Monthly Outflow, Interest Payable, Avg Rate) and loan repayment progress meters
+
 **In progress:**
 - None
 
 **Not started:**
-- Next Track B module (EMI Manager)
+- Track A modules (Portfolio Tracker, Net Worth Tracker, Goal Manager, FIRE Planner) & Suite-Wide Insights
 
 **On hold / deferred:**
 - None
 
 **Known issues / tech debt:**
-- None. Verified with 21 backend integration tests and 0 TypeScript build errors.
+- None. Verified with 25 backend integration tests and 0 TypeScript build errors.
 
 ---
 
@@ -150,6 +164,8 @@ Owner: Alok (doing all Phase 0 init work solo — see §7).
 
 | Date | Who | What changed |
 |---|---|---|
+| 2026-09-02 | Alok | Westro Replica Integration: Added persona avatar illustrations to `public/avatars/`, integrated 8-guide Learn Center (`/learn`) with interactive search & filters, elevated Landing Page with Westro typography, hero banner, suite explorer, and demo persona login, plus connected Learn Center to persistent navigation header |
+| 2026-09-02 | Alok | Phase 1 Track B: EMI Manager module fully built from first principles (Entities `em_loans`, `em_loan_prepayments`, `em_loan_emi_logs`, `EmiCalculationEngine`, `EmiService`, `EmiController`, `EmiIntegrationTest` 25/25 tests passing, Net Worth liability contract integration, Expense Tracker transaction matching, Amortization explorer with CSV export, Prepayment sandbox, Standalone EMI calculator, and router integration). **Track B is now 100% COMPLETE!** |
 | 2026-09-02 | Alok | Phase 1 Track B: Trip Manager module fully built end-to-end (Entities `tr_trips`, `tr_participants`, `tr_plan_stops`, `tr_category_budgets`, `tr_expenses`, `tr_expense_splits`, `tr_expense_payments`, `tr_packing_items`, `tr_checklist_items`, `TripService`, `TripAiPlannerService`, `TripController`, `TripIntegrationTest` 21/21 suite tests passing, 5-tab UI with 4 Money sub-tabs, Smart Split solver, debt minimization matrix, zero-division safeguards, Vietnam sample seeder, and router integration) |
 | 2026-09-02 | Alok | Phase 1 Track B: Vault module fully built end-to-end (Entities `vt_vault_profiles`, `vt_backup_codes`, `vt_notes`, `vt_device_keys`, `CaptchaService`, `VaultService`, `VaultController`, `VaultIntegrationTest`, WebCrypto AES-GCM-256 client crypto engine, Setup/Unlock/Timed 30s Reveal/Settings UI, and router integration) |
 | 2026-09-02 | Alok | Phase 1 Track B: Expense Tracker module fully built end-to-end (Entities `et_income_sources`, `et_transactions`, `et_tasks`, `et_notes`, Service calculations, Controller, Integration tests, Frontend tabs, and real DB-backed Summary API contract fulfillment) |

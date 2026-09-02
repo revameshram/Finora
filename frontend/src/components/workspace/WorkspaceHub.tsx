@@ -154,16 +154,16 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
       title: 'EMI Manager',
       tagline: 'Amortization & Prepayment Calculator',
       track: 'Track B',
-      status: 'Queued',
+      status: 'Ready',
       icon: CreditCard,
-      badgeColor: 'bg-[#FAFAF9] text-[#78716C] border-[#E7E5E4]',
+      badgeColor: 'bg-[#FEF3C7] text-[#B45309] border-[#B45309]/30',
       description: 'Loan amortization visualizers, interest-to-principal breakdown, and prepayment simulation.',
       summaryData: {
         metric: 'Loan Schedules',
-        subtext: 'Accelerate mortgage prepayment',
+        subtext: 'Accelerate mortgage prepayment & savings',
       },
-      cta: 'Calculate Prepayment',
-      action: () => toast.info('Track B: Prompt B.4 EMI Manager is queued'),
+      cta: 'Manage Loans',
+      action: () => onNavigateToModule('emi-manager'),
     },
   ];
 
@@ -415,6 +415,26 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
                 onClick: () => onNavigateToModule('expense-tracker'),
               }}
             />
+          </div>
+
+          {/* Learn Center Callout */}
+          <div className="p-5 bg-gradient-to-r from-stone-900 via-stone-800 to-amber-950 text-white rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300">
+                Educational Knowledge Hub
+              </span>
+              <h4 className="text-sm font-bold">Deep Dive into Finora's 8 Financial Frameworks</h4>
+              <p className="text-xs text-stone-300 max-w-xl">
+                Read practical formulas and rules of thumb on debt prepayment math, SWR modeling, and zero-knowledge encryption.
+              </p>
+            </div>
+
+            <button
+              onClick={() => onNavigateToModule('learn')}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold rounded-xl text-xs flex items-center gap-1.5 flex-shrink-0 transition-colors shadow-xs"
+            >
+              Explore 8 Guides
+            </button>
           </div>
         </div>
       )}

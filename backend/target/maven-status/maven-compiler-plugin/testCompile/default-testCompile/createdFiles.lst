@@ -1,4 +1,5 @@
 com\finora\FinoraContractsIntegrationTest.class
+com\finora\EmiIntegrationTest.class
 com\finora\ExpenseTrackerIntegrationTest.class
 com\finora\FinoraCurrencyIntegrationTest.class
 com\finora\FinoraLinkingIntegrationTest$TestAssetItem$TestAssetItemBuilderImpl.class
