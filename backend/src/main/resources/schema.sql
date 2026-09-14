@@ -197,4 +197,68 @@ CREATE TABLE IF NOT EXISTS em_loan_emi_logs (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ==============================================================================
+-- Net Worth Tracker Module Schema
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS nw_assets (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(64) NOT NULL,
+    asset_value DECIMAL(19,4) NOT NULL DEFAULT 0,
+    acquired_date DATE,
+    growth_rate_pct DECIMAL(5,2) DEFAULT 0,
+    recurring_investment DECIMAL(19,4) DEFAULT 0,
+    notes TEXT,
+    is_included BOOLEAN DEFAULT TRUE,
+    is_linked BOOLEAN DEFAULT FALSE,
+    source_module VARCHAR(32) DEFAULT 'MANUAL',
+    source_entity_id VARCHAR(64),
+    linked_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS nw_liabilities (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(64) NOT NULL,
+    amount DECIMAL(19,4) NOT NULL DEFAULT 0,
+    incurred_date DATE,
+    interest_rate_pct DECIMAL(5,2) DEFAULT 0,
+    recurring_payment DECIMAL(19,4) DEFAULT 0,
+    notes TEXT,
+    is_included BOOLEAN DEFAULT TRUE,
+    is_linked BOOLEAN DEFAULT FALSE,
+    source_module VARCHAR(32) DEFAULT 'MANUAL',
+    source_entity_id VARCHAR(64),
+    linked_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS nw_snapshots (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    snapshot_date DATE NOT NULL,
+    total_assets DECIMAL(19,4) NOT NULL DEFAULT 0,
+    total_liabilities DECIMAL(19,4) NOT NULL DEFAULT 0,
+    net_worth DECIMAL(19,4) NOT NULL DEFAULT 0,
+    health_score INT NOT NULL DEFAULT 100,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS nw_growth_scenarios (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    cagr_pct DECIMAL(5,2) NOT NULL,
+    doubles_in_years INT,
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+
 

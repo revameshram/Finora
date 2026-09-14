@@ -35,6 +35,71 @@
 
 ## Log
 
+### 2026-09-14 — Reva — Track A / Phase 1
+
+**Worked on:** Net Worth Tracker Full End-to-End Frontend UI Workbench (`NetWorthTracker.tsx`), Growth Engine Sandbox Integration, and Executive Workspace Navigation.
+
+**Changes made:**
+- **Frontend Architecture (`frontend/src/components/networth/`):**
+  - Built `NetWorthTracker.tsx` workbench with 3 core tabs: Assets, Liabilities, and Summary & Projections Engine.
+  - Built `AddAssetModal.tsx` supporting 9 widened asset categories (`CASH_BANK`, `INVESTMENTS`, `CRYPTO`, `GOLD_SILVER`, `REAL_ESTATE`, `VEHICLES`, `RETIREMENT_ACCOUNTS`, `BUSINESS_ASSETS`, `OTHER`) with expected CAGR % inputs and notes.
+  - Built `AddLiabilityModal.tsx` supporting 7 widened liability categories (`HOME_LOAN`, `CAR_LOAN`, `PERSONAL_LOAN`, `CREDIT_CARD`, `STUDENT_LOAN`, `BUSINESS_LOAN`, `OTHER_DEBT`).
+  - Integrated `LinkedBadge` and `IncludeToggle` across assets and liabilities tables, supporting 1-click delink conversion to standalone manual holdings.
+  - Built 3-Scenario Growth Projection Sandbox interacting with `CompoundGrowthEngine` (Conservative 5%, Moderate 10%, Aggressive 15% with Rule-of-72 hints, monthly SIP contribution, inflation discounting, and 5Y/10Y/20Y/30Y horizon selectors).
+  - Enforced Portfolio-Linked Flat Growth Nuance banner highlighting that linked portfolio holdings are held flat (0% CAGR) in projections to avoid double-counting against Portfolio Tracker forecasts.
+  - Built Category Breakdown progress meters and Top Asset Holdings ranking.
+  - Built Financial Health & Insights Panel displaying Health Score (0-100), Debt-to-Asset ratio, Liquidity ratio, Largest Asset/Liability, and contextual recommendation cards.
+  - Built 1-Click Sample Data Seeder ("Try with Sample Data") populating realistic Indian asset & liability fixtures.
+  - Integrated `NetWorthTracker` into `App.tsx` and `WorkspaceHub.tsx` (set status to Ready / Done).
+
+**Affects other track?** Yes
+- If yes — what changed and what the other person needs to do about it:
+  - **Net Worth Tracker is now 100% DONE end-to-end!**
+  - **Shared Growth Engine Library (`CompoundGrowthEngine`)** is fully accessible and tested. Goal Manager and FIRE Planner will consume its public interface for target costing and SWR projections.
+  - EMI Manager cross-track loan liability sync is fully verified in the liabilities ledger.
+
+**Contract impact?** Net Worth Liabilities/Assets API
+- Verified contract compatibility with `POST /api/v1/networth/liabilities` and `GET /api/v1/networth/liabilities`.
+
+**Blocked on:**
+- None. Net Worth Tracker is 100% Done! Ready for Goal Manager.
+
+**Next session:**
+- Track A: Reva to begin Goal Manager.
+
+---
+
+### 2026-09-07 — Reva — Track A / Phase 1
+
+**Worked on:** Prompt A.2 Net Worth Tracker Module & Shared Growth Engine Library (`CompoundGrowthEngine`, Widened Category Enums, Real DB Liabilities Contract Fulfillment, 3-Scenario Projections with Portfolio Flat Growth Nuance, Financial Health Insights, and Integration Tests).
+
+**Changes made:**
+- **Shared Growth Engine Library (`com.finora.common.growth.*`):**
+  - Built `CompoundGrowthEngine` and `GrowthProjectionPoint`: pure mathematical engine owning lump sum growth ($FV = PV(1+r)^n$), monthly SIP annuity math ($FV_{\text{annuity}}$), real purchasing power discounting, and reverse SIP target costing. Public interface ready for Goal Manager and FIRE Planner.
+- **Backend Architecture (`com.finora.networth.*`):**
+  - JPA Entities: `Asset` (`nw_assets`), `Liability` (`nw_liabilities`), `NetWorthSnapshot` (`nw_snapshots`), and `GrowthScenario` (`nw_growth_scenarios`) extending `LinkableEntity`.
+  - Widened Category Enums: `AssetCategory` (9 categories including Crypto, Business Assets) and `LiabilityCategory` (7 categories including Student Loan, Credit Card).
+  - Cross-Track Contract Fulfillment: `NetWorthLiabilityService` replaces Phase 0 mock controller with real database storage for `POST /api/v1/networth/liabilities` and `GET /api/v1/networth/liabilities`, receiving loan liabilities pushed by **EMI Manager**.
+  - `NetWorthAnalyticsService`: Total Assets, Total Liabilities, Net Worth, 30-day velocity, Category Breakdowns, Top Holdings, 3-Scenario Projections (Conservative 5%, Moderate 10%, Aggressive 15% with Rule-of-72 hints and **Portfolio-linked flat growth nuance** holding linked investments flat), and Financial Health Score (0-100 with Debt-to-Asset & Liquidity ratio cards).
+  - `NetWorthController`: REST API endpoints at `/api/v1/networth/*`.
+  - Schema & Integration Tests: Updated `schema.sql` with `nw_*` DDLs and added `NetWorthIntegrationTest.java` verifying asset/liability CRUD, EMI sync contract, growth projections, health scores, and `CompoundGrowthEngine` math.
+
+**Affects other track?** Yes
+- If yes — what changed and what the other person needs to do about it:
+  - **Shared Growth Engine Library (`CompoundGrowthEngine`)** is now live in `com.finora.common.growth`. Goal Manager and FIRE Planner will consume it for target costing and growth math.
+  - Net Worth Liabilities API is now backed by real database storage, preserving exact `CreateLiabilityRequest` and `NetWorthLiabilityDto` contracts.
+
+**Contract impact?** Net Worth Liabilities/Assets API
+- Real database storage now backs `/api/v1/networth/liabilities`.
+
+**Blocked on:**
+- None. Ready for Prompt A.3 (Goal Manager)!
+
+**Next session:**
+- Track A: Reva to begin Prompt A.3 (Goal Manager).
+
+---
+
 ### 2026-09-02 — Alok — Westro Integration & Learn Center
 
 **Worked on:** Westro Persona Avatars, Interactive 8-Guide Learn Center (`/learn`), and Landing Page elevation.

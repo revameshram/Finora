@@ -9,6 +9,7 @@ import { ExpenseTracker } from './components/expense/ExpenseTracker';
 import { Vault } from './components/vault/Vault';
 import { TripManager } from './components/trip/TripManager';
 import { EmiManager } from './components/emi/EmiManager';
+import { NetWorthTracker } from './components/networth/NetWorthTracker';
 import { LearnCenter } from './components/learn/LearnCenter';
 import {
   HelpCircle,
@@ -46,7 +47,7 @@ const SUITE_TIPS = [
 
 const AuthenticatedApp: React.FC = () => {
   const { user, logout } = useAuth();
-  const [currentView, setCurrentView] = useState<'workspace' | 'expense-tracker' | 'vault' | 'trip-manager' | 'emi-manager' | 'learn'>('workspace');
+  const [currentView, setCurrentView] = useState<'workspace' | 'expense-tracker' | 'vault' | 'trip-manager' | 'emi-manager' | 'net-worth-tracker' | 'learn'>('workspace');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
   const avatarSrc = user?.avatarUrl || (user?.email?.includes('reva') ? '/avatars/profile-mid-adult-female.webp' : '/avatars/profile-mid-adult-male.webp');
@@ -153,12 +154,13 @@ const AuthenticatedApp: React.FC = () => {
       {/* Main Workspace Body */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {currentView === 'workspace' && (
-          <WorkspaceHub onNavigateToModule={(mod) => setCurrentView(mod as 'workspace' | 'expense-tracker' | 'vault' | 'trip-manager' | 'emi-manager')} />
+          <WorkspaceHub onNavigateToModule={(mod) => setCurrentView(mod as any)} />
         )}
         {currentView === 'expense-tracker' && <ExpenseTracker />}
         {currentView === 'vault' && <Vault />}
         {currentView === 'trip-manager' && <TripManager />}
         {currentView === 'emi-manager' && <EmiManager />}
+        {currentView === 'net-worth-tracker' && <NetWorthTracker />}
         {currentView === 'learn' && (
           <LearnCenter
             onBackToWorkspace={() => setCurrentView('workspace')}

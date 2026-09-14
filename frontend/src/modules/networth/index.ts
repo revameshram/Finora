@@ -1,2 +1,2 @@
 // Module 2 (Track A): Net Worth Tracker
-export {};
+export { NetWorthTracker } from '../../components/networth';
