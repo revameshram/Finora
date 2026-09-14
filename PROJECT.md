@@ -52,8 +52,8 @@ Owner: Alok (doing all Phase 0 init work solo — see §7).
 |---|---|---|---|
 | Portfolio Tracker | Feature-complete | — | Ships first; Net Worth needs it as linkable source |
 | Net Worth Tracker | Done | Portfolio Tracker | Owns shared growth engine (compound growth + FV-of-annuity) |
-| Goal Manager | Not started | Net Worth, Portfolio, Expense Tracker (mocked) | |
-| FIRE Planner | Not started | Net Worth, Portfolio, Expense Tracker (mocked) | Reuses growth engine from Net Worth Tracker |
+| Goal Manager | Done | Net Worth, Portfolio, Expense Tracker (mocked) | Reuses growth engine, Portfolio links & Expense contract |
+| FIRE Planner | Done | Net Worth, Portfolio, Expense Tracker (mocked) | Reuses growth engine, Portfolio links & Expense contract |
 
 ### Track B — Cash Flow & Life Admin (Alok)
 
@@ -153,11 +153,43 @@ Owner: Alok (doing all Phase 0 init work solo — see §7).
 - [x] Full End-to-End Frontend UI Workbench (`NetWorthTracker.tsx`) with Assets, Liabilities, and Summary tabs, interactive sample data seeder, delink capabilities, `IncludeToggle`, portfolio flat growth banners, 3-scenario growth projections sandbox, category breakdown meters, top holdings ranking, and financial health insights panel
 - [x] Full integration into Executive Workspace Shell (`App.tsx` and `WorkspaceHub.tsx`)
 
+### Goal Manager
+**Status:** Done
+**Implemented:**
+- [x] Header KPIs (Total Saved, Target Amount, Inflation-Adjusted Target, Overall Progress %, Active/OnTrack/Behind counts, Required Monthly Rate, Next Due milestone)
+- [x] Capacity Bar comparing required monthly savings rate vs user-set Monthly Savings Capacity with over-capacity alert banner and settings shortcut
+- [x] Allocation Donut & category breakdown rollups
+- [x] Per-Goal Summary Cards Grid with progress bars, required rates, due days, and direct action shortcuts
+- [x] Clickable Alerts & Nudges Feed shortcutting directly into detail drawer or settings modal
+- [x] Goal Manager Settings Modal (Monthly capacity, behind-schedule lag threshold %, default inflation rate %)
+- [x] Goal Detail Drawer/Modal (PV vs Inflation-Adjusted FV banner, history log, actual vs planned trajectory table, milestones checklist)
+- [x] 4-Tab Goal Creation Wizard (Basics, Target & Plan, Funding, Link Investments from Portfolio Tracker)
+- [x] Single Contribution & Withdrawal Modal
+- [x] Multi-mode Bulk Contribution Tooling (Per Goal, Split %, Split Fixed sum-enforced)
+- [x] Enforced Domain Rule: GoalTag transactions from Expense Tracker associate for reporting only and never mutate goal balance
+- [x] Reused `CompoundGrowthEngine` library for reverse SIP target costing & inflation compounding ($FV = PV(1+r)^n$)
+- [x] Integration Test Suite (`GoalIntegrationTest` verifying math engine, CRUD, bulk contribution, capacity alerts, portfolio linking, and GoalTag non-mutating reporting behavior)
+- [x] Full integration into Executive Workspace Shell (`App.tsx` and `WorkspaceHub.tsx`)
+
+### FIRE Planner
+**Status:** Done
+**Implemented:**
+- [x] Dual-mode retirement calculator (Mode 1: Target-Years-to-FIRE $\rightarrow$ Computed Timeline/Age; Mode 2: Required Monthly Savings $\rightarrow$ Computed Monthly SIP)
+- [x] Two-column layout with Left Input Parameters Form & Mode Rail and Right Persistent Sidebar (FIRE Number Card, Active Mode Result Card, About FIRE Card)
+- [x] Reused `CompoundGrowthEngine` library from Net Worth Tracker (`com.finora.common.growth`) for compounding ($FV = PV(1+r)^n$) and reverse SIP target costing
+- [x] Resolved return-assumption inconsistency with Finora standardized baseline: 12% Pre-Retirement CAGR, 8% Post-Retirement CAGR, 6% Inflation, 4% SWR (25x multiple)
+- [x] Starting corpus resolution supporting Net Worth Tracker auto-sync, Portfolio Tracker auto-sync, or Manual override
+- [x] Annual retirement expenses auto-population from Expense Tracker Summary API contract (`GET /api/v1/expenses/summary`)
+- [x] Summary Tab with dual-line Savings Growth Projection chart (Nominal Wealth vs Real Purchasing Power) and Progress bar chart
+- [x] 1-Click Sample Data Seeder (Age 32, ₹25L starting corpus, ₹60k monthly savings, ₹12L annual spend)
+- [x] Integration Test Suite (`FirePlannerIntegrationTest` verifying 25x SWR math, Mode 1 timeline, Mode 2 required savings, corpus sync, and Expense summary contract integration)
+- [x] Full integration into Executive Workspace Shell (`App.tsx` and `WorkspaceHub.tsx`)
+
 **In progress:**
 - None
 
 **Not started:**
-- Goal Manager, FIRE Planner & Suite-Wide Insights
+- Suite-Wide Insights
 
 **On hold / deferred:**
 - None
@@ -179,6 +211,8 @@ Owner: Alok (doing all Phase 0 init work solo — see §7).
 
 | Date | Who | What changed |
 |---|---|---|
+| 2026-09-14 | Reva | Phase 1 Track A: FIRE Planner module fully built end-to-end (Entities `fp_*`, `FirePlannerService` consuming shared `CompoundGrowthEngine` for 4% SWR retirement math & reverse SIP calculations, `FirePlannerController`, `FirePlannerIntegrationTest`, 2-column layout, Mode 1 & Mode 2 calculation modes, standardized Finora baseline assumptions, Expense contract auto-population, dual-line growth projection chart, and frontend workbench `FirePlanner.tsx` integrated into `App.tsx` / `WorkspaceHub.tsx`). **FIRE Planner is now FEATURE-COMPLETE & DONE! All 4 Track A modules are now 100% COMPLETE!** |
+| 2026-09-14 | Reva | Phase 1 Track A: Goal Manager module fully built end-to-end (Entities `gm_*`, `GoalService` consuming shared `CompoundGrowthEngine` for inflation compounding & reverse SIP target costing, `GoalController`, `GoalIntegrationTest`, capacity bar & pace monitoring, 4-tab wizard, single/bulk contribute modals, GoalTag reporting non-mutating rule, and frontend workbench `GoalManager.tsx` integrated into `App.tsx` / `WorkspaceHub.tsx`). **Goal Manager is now FEATURE-COMPLETE & DONE!** |
 | 2026-09-07 | Reva | Phase 1 Track A: Net Worth Tracker & Shared Growth Engine Library fully built end-to-end (Entities `nw_*` extending `LinkableEntity`, widened category enums, real DB liabilities contract fulfillment receiving loans pushed by EMI Manager, `CompoundGrowthEngine` library for compound growth & SIP annuity math, `NetWorthAnalyticsService` with 3-scenario projections & portfolio flat growth nuance, `NetWorthController`, and `NetWorthIntegrationTest`). **Net Worth Tracker is now FEATURE-COMPLETE!** |
 | 2026-09-07 | Reva | Phase 1 Track A: Portfolio Tracker module fully built end-to-end (Entities `pf_*` extending `LinkableEntity`, `PortfolioAssetService`, `PortfolioAnalyticsService`, `PortfolioPricingService` with Strategy+Factory+Caffeine pattern for Yahoo Finance / MF API / Metals, `PortfolioController`, `PortfolioIntegrationTest` passing, Dashboard rollups, Growth Outlook 1Y/3Y/5Y projections, Equity Drawdown Check, and sample portfolio seeder). **Portfolio Tracker is now FEATURE-COMPLETE!** |
 | 2026-09-02 | Alok | Phase 1 Track B: EMI Manager module fully built from first principles (Entities `em_loans`, `em_loan_prepayments`, `em_loan_emi_logs`, `EmiCalculationEngine`, `EmiService`, `EmiController`, `EmiIntegrationTest` 25/25 tests passing, Net Worth liability contract integration, Expense Tracker transaction matching, Amortization explorer with CSV export, Prepayment sandbox, Standalone EMI calculator, and router integration). **Track B is now 100% COMPLETE!** |
@@ -200,6 +234,8 @@ Owner: Alok (doing all Phase 0 init work solo — see §7).
 
 - [x] **Delink semantics**: Resolved in Phase 0.4 — Delink converts a linked record into an independent standalone MANUAL copy with its current frozen values, setting `isLinked=false`, `sourceModule=MANUAL`, `sourceEntityId=null`, keeping the record fully editable and preserving calculation integrity.
 - [x] **Reconcile three scoring layers**: Resolved in Phase 1 Track A — Intentional multi-tier design. Expense Tracker measures cash flow velocity/savings rate (0-100), Net Worth Tracker measures balance sheet leverage/liquidity (0-100), and Suite-Wide Insights tab aggregates cross-module health into a composite suite score.
+- [x] **GoalTag non-mutating balance rule**: Resolved in Phase 1 Track A (Goal Manager) — GoalTag transactions tagged from Expense Tracker serve reporting associations only and never alter goal `currentValue`. Goal balance is driven exclusively by manual funding contributions (`GoalContribution`) and linked Portfolio holdings.
+- [x] **FIRE return-assumption inconsistency**: Resolved in Phase 1 Track A (FIRE Planner) — Standardized Finora baseline assumptions: 12.0% Pre-Retirement CAGR, 8.0% Post-Retirement CAGR, 6.0% Inflation, and 4.0% Safe Withdrawal Rate (25x multiple).
 
 ---
 

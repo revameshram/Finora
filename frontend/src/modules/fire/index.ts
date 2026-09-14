@@ -1,2 +1,2 @@
 // Module 4 (Track A): FIRE Planner
-export {};
+export { FirePlanner } from '../../components/fire';

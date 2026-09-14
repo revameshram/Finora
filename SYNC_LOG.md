@@ -37,6 +37,88 @@
 
 ### 2026-09-14 — Reva — Track A / Phase 1
 
+**Worked on:** Prompt A.4 FIRE Planner Module (Backend Entities `fp_*`, `FirePlannerService` consuming shared `CompoundGrowthEngine` for 4% SWR & reverse SIP retirement math, `FirePlannerController`, `FirePlannerIntegrationTest`, 2-Column Layout with Persistent Results Sidebar, Mode 1 & Mode 2 Calculation Engines, Standardized Finora Baseline Return Assumptions, Expense Tracker Summary Contract Auto-Population, Dual-Line Savings Growth Chart, and Workspace Shell Integration).
+
+**Changes made:**
+- **Backend Architecture (`com.finora.fire.*`):**
+  - Entities: `FirePlan` (`fp_plans` extending `LinkableEntity`), `FirePlanSnapshot` (`fp_snapshots`).
+  - `FirePlannerService`:
+    - Consumes `CompoundGrowthEngine` for 4% SWR retirement target calculation ($N_{\text{FIRE}} = \frac{\text{Annual Expenses}}{\text{SWR} / 100}$) and 25x multiple modeling.
+    - Mode 1 (`YEARS_TO_FIRE`): Solves exact timeline to retirement given starting corpus, monthly savings, pre-retirement CAGR (12%), and inflation (6%).
+    - Mode 2 (`REQUIRED_SAVINGS`): Calculates required monthly savings given target retirement age / horizon using `calculateRequiredMonthlySip`.
+    - Resolved return-assumption inconsistency with standardized baseline: 12% Pre-Retirement CAGR, 8% Post-Retirement CAGR, 6% Inflation, 4% SWR.
+    - Corpus sync supporting Net Worth Tracker auto-sync, Portfolio Tracker auto-sync, or Manual override.
+    - Auto-fills annual retirement expenses from Expense Tracker Summary API contract (`GET /api/v1/expenses/summary`).
+    - Generates 30-year dual-line projections comparing Nominal Wealth vs Real Purchasing Power.
+    - Includes 1-Click Sample Data Seeder (Age 32, ₹25L starting corpus, ₹60k monthly savings, ₹12L annual spend).
+  - `FirePlannerController`: REST endpoints at `/api/v1/fire/*`.
+  - Integration Tests: `FirePlannerIntegrationTest` verifying 25x SWR math, Mode 1 timeline, Mode 2 required savings, corpus sync, and Expense summary contract integration.
+- **Frontend Architecture (`frontend/src/components/fire/`):**
+  - `FirePlanner.tsx`: Two-column layout with Left Rail & Input Form, Mode Switcher (Mode 1 vs Mode 2), and Right Persistent Sidebar (FIRE Number Card, Active Mode Result Card, About FIRE Card).
+  - `FireSummaryTab.tsx`: Summary tab with Progress bar chart, Dual-line Savings Growth & Inflation Projection table, and strategic recommendations feed.
+  - Router Integration: Mounted `FirePlanner` in `App.tsx` and set FIRE Planner tile status to Ready in `WorkspaceHub.tsx`.
+
+**Affects other track?** Yes
+- If yes — what changed and what the other person needs to do about it:
+  - **FIRE Planner is now 100% FEATURE-COMPLETE and DONE end-to-end!**
+  - **ALL 4 TRACK A WEALTH & GROWTH MODULES ARE NOW 100% DONE!** (Portfolio Tracker, Net Worth Tracker, Goal Manager, FIRE Planner).
+  - Consumes `CompoundGrowthEngine` from `com.finora.common.growth` and Expense Tracker Summary API contract (`GET /api/v1/expenses/summary`).
+
+**Contract impact?** none (consumed existing contracts)
+- Verified compatibility with Expense Tracker Summary API contract (`GET /api/v1/expenses/summary`).
+
+**Blocked on:**
+- None. Track A is 100% Done!
+
+**Next session:**
+- Suite-Wide Insights Tab or Track B hand-off verification.
+
+---
+
+### 2026-09-14 — Reva — Track A / Phase 1
+
+**Worked on:** Prompt A.3 Goal Manager Module (Backend Entities `gm_*`, `GoalService` consuming shared `CompoundGrowthEngine`, `GoalController`, `GoalIntegrationTest`, 4-Tab Goal Creation Wizard, Single & Multi-Mode Bulk Contribution Modals, Goal Settings Modal, Goal Detail Modal with Actual vs Planned Trajectory, Pace Monitoring & Capacity Bar, GoalTag Reporting-Only Rule Enforcement, and Workspace Shell Integration).
+
+**Changes made:**
+- **Backend Architecture (`com.finora.goal.*`):**
+  - Entities: `Goal` (`gm_goals` extending `LinkableEntity`), `GoalContribution` (`gm_contributions`), `GoalInvestmentLink` (`gm_investment_links`), `GoalTag` (`gm_tags`), `GoalMilestone` (`gm_milestones`), `GoalManagerSettings` (`gm_settings`).
+  - `GoalService`:
+    - Consumes `CompoundGrowthEngine` for inflation-adjusted target compounding ($FV_{\text{target}} = \text{targetAmount} \times (1+r)^n$) and reverse SIP target costing (`calculateRequiredMonthlySip`).
+    - Enforces Monthly Savings Capacity ceiling check and flags over-capacity with exact overage amounts.
+    - Computes linear planned vs actual trajectory gap points for pace tracking.
+    - Implements Single Contribution and 3-mode Bulk Contribution (`PER_GOAL`, `SPLIT_PCT`, `SPLIT_FIXED`).
+    - Enforces domain rule: `GoalTag` transactions from Expense Tracker tag goals for reporting only and **never** alter `currentValue`.
+    - Includes 1-Click Sample Data Seeder (Emergency Shield ₹6L, Tokyo Vacation ₹3.5L, Home Down Payment ₹25L, Wealth Compounding ₹1Cr).
+  - `GoalController`: REST endpoints at `/api/v1/goals/*`.
+  - Integration Tests: `GoalIntegrationTest` verifying goal CRUD, math engine compounding, single/bulk contributions, capacity overage alerts, portfolio investment links, and non-mutating `GoalTag` reporting.
+- **Frontend Architecture (`frontend/src/components/goal/`):**
+  - `GoalManager.tsx`: Main workbench with Header KPIs, Capacity Bar (with "Fix in Settings" button), Allocation Donut, Per-Goal Summary Cards, Clickable Nudges Feed, and Overview/Timeline tabs.
+  - `CreateGoalModal.tsx`: 4-tab wizard (1. Basics with smart category hints, 2. Target & Plan with Today's vs FV toggle, 3. Funding, 4. Link Portfolio Investments).
+  - `GoalDetailModal.tsx`: Target Value banner (Today's Money $\rightarrow$ Adj. FV), Progress bar, Manage Actions, and sub-tabs for Actual vs Planned Trajectory table, Contribution History log, and Milestones checklist.
+  - `SingleContributeModal.tsx`: Contribution vs Withdrawal toggle, amount, date, note.
+  - `BulkContributeModal.tsx`: 3-mode bulk deposit modal (Per Goal, Split %, Split Fixed sum-enforced).
+  - `GoalSettingsModal.tsx`: Monthly Savings Capacity, Behind-Schedule Threshold %, Default Inflation Rate %.
+  - Router Integration: Mounted `GoalManager` in `App.tsx` and set Goal Manager tile status to Ready in `WorkspaceHub.tsx`.
+
+**Affects other track?** Yes
+- If yes — what changed and what the other person needs to do about it:
+  - **Goal Manager is now 100% FEATURE-COMPLETE and DONE end-to-end!**
+  - Consumes `CompoundGrowthEngine` from `com.finora.common.growth` and Expense Tracker Summary API contract (`/api/v1/expenses/summary` & `/api/v1/expenses/goal-linked`).
+  - Next module up for Track A is **FIRE Planner** (Prompt A.4), which will consume `CompoundGrowthEngine` for 4% SWR / Trinity study retirement modeling.
+
+**Contract impact?** none (consumed existing contracts)
+- Verified compatibility with Expense Tracker Summary API contract (`GET /api/v1/expenses/summary` & `GET /api/v1/expenses/goal-linked`).
+
+**Blocked on:**
+- None. Goal Manager is 100% Done! Ready for FIRE Planner.
+
+**Next session:**
+- Track A: Reva to begin Prompt A.4 (FIRE Planner).
+
+---
+
+### 2026-09-14 — Reva — Track A / Phase 1
+
 **Worked on:** Net Worth Tracker Full End-to-End Frontend UI Workbench (`NetWorthTracker.tsx`), Growth Engine Sandbox Integration, and Executive Workspace Navigation.
 
 **Changes made:**
