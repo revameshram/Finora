@@ -9,6 +9,9 @@ import { ExpenseTracker } from './components/expense/ExpenseTracker';
 import { Vault } from './components/vault/Vault';
 import { TripManager } from './components/trip/TripManager';
 import { EmiManager } from './components/emi/EmiManager';
+import { NetWorthTracker } from './components/networth/NetWorthTracker';
+import { GoalManager } from './components/goal/GoalManager';
+import { FirePlanner } from './components/fire/FirePlanner';
 import { LearnCenter } from './components/learn/LearnCenter';
 import {
   HelpCircle,
@@ -46,7 +49,7 @@ const SUITE_TIPS = [
 
 const AuthenticatedApp: React.FC = () => {
   const { user, logout } = useAuth();
-  const [currentView, setCurrentView] = useState<'workspace' | 'expense-tracker' | 'vault' | 'trip-manager' | 'emi-manager' | 'learn'>('workspace');
+  const [currentView, setCurrentView] = useState<'workspace' | 'expense-tracker' | 'vault' | 'trip-manager' | 'emi-manager' | 'net-worth-tracker' | 'goal-manager' | 'fire-planner' | 'learn'>('workspace');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
   const avatarSrc = user?.avatarUrl || (user?.email?.includes('reva') ? '/avatars/profile-mid-adult-female.webp' : '/avatars/profile-mid-adult-male.webp');
@@ -97,35 +100,30 @@ const AuthenticatedApp: React.FC = () => {
             <button
               type="button"
               onClick={() => setCurrentView('learn')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors shadow-2xs ${
-                currentView === 'learn'
-                  ? 'bg-amber-100 text-amber-900 border-amber-300'
-                  : 'text-[#78716C] hover:text-[#1C1917] bg-[#FAFAF9] hover:bg-white border-[#E7E5E4]'
-              }`}
+              className="p-2 text-[#78716C] hover:text-[#1C1917] hover:bg-[#F5F5F4] rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold"
+              title="Learn Center"
             >
-              <BookOpen className="h-3.5 w-3.5 text-[#B45309]" />
+              <BookOpen className="h-4 w-4 text-[#B88728]" />
               <span className="hidden sm:inline">Learn</span>
             </button>
 
             <button
               type="button"
               onClick={() => setIsOnboardingOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#78716C] hover:text-[#1C1917] bg-[#FAFAF9] hover:bg-white rounded-lg border border-[#E7E5E4] transition-colors shadow-2xs"
+              className="p-2 text-[#78716C] hover:text-[#1C1917] hover:bg-[#F5F5F4] rounded-lg transition-colors"
+              title="Suite Guide & Onboarding"
             >
-              <HelpCircle className="h-3.5 w-3.5 text-[#B45309]" />
-              <span className="hidden sm:inline">Guide & Tips</span>
+              <HelpCircle className="h-5 w-5" />
             </button>
 
-            <div className="flex items-center pl-2 border-l border-[#E7E5E4] gap-2">
-              <div className="flex items-center gap-2 px-2.5 py-1 bg-[#FAFAF9] rounded-lg border border-[#E7E5E4]">
+            <div className="h-4 w-px bg-[#E7E5E4] mx-1" />
+
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
                 <img
                   src={avatarSrc}
-                  alt="User avatar"
-                  className="h-7 w-7 rounded-full border border-stone-300 object-cover bg-amber-50"
-                  onError={(e) => {
-                    // Fallback to initial
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
+                  alt={user?.fullName || 'User Profile'}
+                  className="h-8 w-8 rounded-full border border-[#D2DDD4] object-cover"
                 />
                 <div className="hidden md:flex flex-col">
                   <span className="text-xs font-bold text-[#1C1917] leading-tight">
@@ -153,12 +151,15 @@ const AuthenticatedApp: React.FC = () => {
       {/* Main Workspace Body */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {currentView === 'workspace' && (
-          <WorkspaceHub onNavigateToModule={(mod) => setCurrentView(mod as 'workspace' | 'expense-tracker' | 'vault' | 'trip-manager' | 'emi-manager')} />
+          <WorkspaceHub onNavigateToModule={(mod) => setCurrentView(mod as any)} />
         )}
         {currentView === 'expense-tracker' && <ExpenseTracker />}
         {currentView === 'vault' && <Vault />}
         {currentView === 'trip-manager' && <TripManager />}
         {currentView === 'emi-manager' && <EmiManager />}
+        {currentView === 'net-worth-tracker' && <NetWorthTracker />}
+        {currentView === 'goal-manager' && <GoalManager />}
+        {currentView === 'fire-planner' && <FirePlanner />}
         {currentView === 'learn' && (
           <LearnCenter
             onBackToWorkspace={() => setCurrentView('workspace')}

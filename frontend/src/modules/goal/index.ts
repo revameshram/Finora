@@ -1,2 +1,2 @@
 // Module 3 (Track A): Goal Manager
-export {};
+export { GoalManager } from '../../components/goal';

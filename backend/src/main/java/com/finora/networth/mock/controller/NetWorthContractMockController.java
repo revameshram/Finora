@@ -18,9 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Slf4j
-@RestController
-@RequestMapping("/api/v1/networth")
-@Tag(name = "Net Worth Tracker Contract", description = "Cross-track contract owned by Track A, consumed by EMI Manager in Track B")
+// Replaced by real NetWorthController in com.finora.networth.controller
 public class NetWorthContractMockController {
 
     private final List<NetWorthLiabilityDto> liabilitiesStore = new ArrayList<>();
