@@ -1,13 +1,17 @@
 package com.finora.portfolio.pricing;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.finora.portfolio.model.AssetType;
 import com.finora.portfolio.model.Market;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -17,18 +21,23 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Mutual funds, via mfapi.in's free scheme-NAV endpoint, keyed by scheme code.
+ * Multi-API Mutual Fund NAV Strategy.
+ * Fetches real-time Net Asset Values from AMFI via mfapi.in endpoints,
+ * cached with Caffeine (5-minute TTL) to avoid redundant requests and rate limit triggers.
  */
 @Slf4j
 @Component
 public class MfApiPriceStrategy implements PriceProviderStrategy {
 
-    private static final String NAV_URL = "https://api.mfapi.in/mf/%s/latest";
+    private static final String NAV_LATEST_URL = "https://api.mfapi.in/mf/%s/latest";
+    private static final String NAV_FULL_URL = "https://api.mfapi.in/mf/%s";
 
     private final RestTemplate restTemplate;
+    
+    // Caffeine cache with 5-minute TTL to prevent redundant fetching
     private final Cache<String, PriceQuote> cache = Caffeine.newBuilder()
-            .expireAfterWrite(Duration.ofMinutes(10))
-            .maximumSize(1000)
+            .expireAfterWrite(Duration.ofMinutes(5))
+            .maximumSize(2000)
             .build();
 
     public MfApiPriceStrategy(RestTemplateBuilder restTemplateBuilder) {
@@ -50,32 +59,85 @@ public class MfApiPriceStrategy implements PriceProviderStrategy {
             return cached;
         }
 
-        try {
-            String url = String.format(NAV_URL, symbolOrCode);
-            MfApiResponse response = restTemplate.getForObject(url, MfApiResponse.class);
-            if (response == null || response.getData() == null || response.getData().isEmpty()) {
-                throw new IllegalStateException("Empty mfapi.in response for scheme " + symbolOrCode);
-            }
-            BigDecimal nav = new BigDecimal(response.getData().get(0).getNav());
-
-            PriceQuote quote = PriceQuote.builder()
-                    .price(nav)
-                    .live(true)
-                    .asOf(LocalDateTime.now())
-                    .source("mfapi.in")
-                    .build();
+        // Provider 1: Latest NAV endpoint
+        PriceQuote quote = fetchFromLatestEndpoint(symbolOrCode);
+        if (quote != null) {
             cache.put(symbolOrCode, quote);
             return quote;
-        } catch (Exception ex) {
-            log.warn("mfapi.in NAV fetch failed for scheme {}: {}. Falling back to last-known NAV.",
-                    symbolOrCode, ex.getMessage());
-            return PriceQuote.builder()
-                    .price(fallbackPrice != null ? fallbackPrice : BigDecimal.ZERO)
-                    .live(false)
-                    .asOf(LocalDateTime.now())
-                    .source("fallback-last-known")
-                    .build();
         }
+
+        // Provider 2: Full history endpoint as secondary fallback
+        quote = fetchFromFullEndpoint(symbolOrCode);
+        if (quote != null) {
+            cache.put(symbolOrCode, quote);
+            return quote;
+        }
+
+        log.warn("mfapi.in NAV fetch failed across all endpoints for scheme {}. Falling back to last-known NAV.", symbolOrCode);
+        PriceQuote fallbackQuote = PriceQuote.builder()
+                .price(fallbackPrice != null ? fallbackPrice : BigDecimal.ZERO)
+                .live(false)
+                .asOf(LocalDateTime.now())
+                .source("fallback-last-known")
+                .build();
+        cache.put(symbolOrCode, fallbackQuote);
+        return fallbackQuote;
+    }
+
+    private PriceQuote fetchFromLatestEndpoint(String schemeCode) {
+        try {
+            String url = String.format(NAV_LATEST_URL, schemeCode);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Finora/1.0");
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<MfApiResponse> response = restTemplate.exchange(
+                    url, HttpMethod.GET, entity, MfApiResponse.class);
+
+            if (response.getBody() != null && response.getBody().getData() != null && !response.getBody().getData().isEmpty()) {
+                String navStr = response.getBody().getData().get(0).getNav();
+                if (navStr != null && !navStr.isBlank()) {
+                    BigDecimal nav = new BigDecimal(navStr.trim());
+                    return PriceQuote.builder()
+                            .price(nav)
+                            .live(true)
+                            .asOf(LocalDateTime.now())
+                            .source("mfapi.in")
+                            .build();
+                }
+            }
+        } catch (Exception ex) {
+            log.debug("Primary mfapi.in latest endpoint failed for {}: {}", schemeCode, ex.getMessage());
+        }
+        return null;
+    }
+
+    private PriceQuote fetchFromFullEndpoint(String schemeCode) {
+        try {
+            String url = String.format(NAV_FULL_URL, schemeCode);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Finora/1.0");
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<MfApiResponse> response = restTemplate.exchange(
+                    url, HttpMethod.GET, entity, MfApiResponse.class);
+
+            if (response.getBody() != null && response.getBody().getData() != null && !response.getBody().getData().isEmpty()) {
+                String navStr = response.getBody().getData().get(0).getNav();
+                if (navStr != null && !navStr.isBlank()) {
+                    BigDecimal nav = new BigDecimal(navStr.trim());
+                    return PriceQuote.builder()
+                            .price(nav)
+                            .live(true)
+                            .asOf(LocalDateTime.now())
+                            .source("mfapi.in-full")
+                            .build();
+                }
+            }
+        } catch (Exception ex) {
+            log.debug("Secondary mfapi.in full endpoint failed for {}: {}", schemeCode, ex.getMessage());
+        }
+        return null;
     }
 
     @Data

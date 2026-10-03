@@ -210,9 +210,9 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                 key={s}
                 type="button"
                 onClick={() => setStatusFilter(s)}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded transition-colors ${
+                className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors ${
                   statusFilter === s
-                    ? 'bg-[#1C1917] text-white'
+                    ? 'bg-[#B88728] text-white shadow-xs'
                     : 'text-[#78716C] hover:text-[#1C1917]'
                 }`}
               >
@@ -225,7 +225,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-2.5 py-1 text-xs font-semibold rounded-md border border-[#E7E5E4] bg-white text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#1C1917]"
+            className="px-2.5 py-1 text-xs font-semibold rounded-md border border-[#E7E5E4] bg-white text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#B88728]"
           >
             <option value="ALL">All Categories</option>
             {Object.entries(EXPENSE_CATEGORY_LABELS).map(([key, label]) => (
@@ -245,14 +245,14 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search items..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-md border border-[#E7E5E4] bg-white text-[#1C1917] placeholder-[#78716C]/60 focus:outline-none focus:ring-1 focus:ring-[#1C1917]"
+              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-md border border-[#E7E5E4] bg-white text-[#1C1917] placeholder-[#78716C]/60 focus:outline-none focus:ring-1 focus:ring-[#B88728]"
             />
           </div>
 
           <button
             type="button"
             onClick={openAddModal}
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-md bg-[#1C1917] hover:bg-[#342D27] text-white transition-colors shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-md bg-[#B88728] hover:bg-[#a67520] text-white transition-colors shadow-xs"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>Add Expense</span>
@@ -511,7 +511,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                 <button
                   type="submit"
                   disabled={isSubmitting || formAmountInr <= 0 || !formItem.trim()}
-                  className="px-4 py-1.5 text-xs font-semibold rounded-md bg-[#1C1917] hover:bg-[#342D27] text-white disabled:opacity-50 transition-colors shadow-xs"
+                  className="px-4 py-1.5 text-xs font-semibold rounded-md bg-[#B88728] hover:bg-[#a67520] text-white disabled:opacity-50 transition-colors shadow-xs"
                 >
                   {isSubmitting ? 'Saving...' : editingTxn ? 'Update Transaction' : 'Create Transaction'}
                 </button>

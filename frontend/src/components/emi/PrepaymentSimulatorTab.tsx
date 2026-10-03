@@ -36,6 +36,34 @@ export const PrepaymentSimulatorTab: React.FC<PrepaymentSimulatorTabProps> = ({
   const [simType, setSimType] = useState<PrepaymentType>('ONE_TIME');
   const [simResult, setSimResult] = useState<PrepaymentSimulationResultDto | null>(null);
   const [_isSimulating, setIsSimulating] = useState(false);
+  const [investReturnRate, setInvestReturnRate] = useState<number>(12);
+
+  // Prepay vs Invest Arbitrage Calculations
+  const remainingYears = Math.max(1, (loan.remainingTenureMonths || loan.tenureMonths || 120) / 12);
+  const calculateInvestGain = () => {
+    const r = investReturnRate / 100;
+    if (simType === 'ONE_TIME') {
+      const fv = simAmount * Math.pow(1 + r, remainingYears);
+      return Math.round(fv - simAmount);
+    } else if (simType === 'RECURRING_ANNUAL') {
+      const n = Math.floor(remainingYears);
+      let totalFv = 0;
+      for (let i = 1; i <= n; i++) {
+        totalFv += simAmount * Math.pow(1 + r, n - i + 1);
+      }
+      return Math.round(totalFv - (simAmount * n));
+    } else {
+      // Monthly SIP
+      const monthlyRate = r / 12;
+      const totalMonths = Math.round(remainingYears * 12);
+      const fv = simAmount * ((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate) * (1 + monthlyRate);
+      return Math.round(fv - (simAmount * totalMonths));
+    }
+  };
+
+  const investmentGain = calculateInvestGain();
+  const interestSaved = simResult?.totalInterestSaved || 0;
+  const arbitrageDifference = investmentGain - interestSaved;
 
   // Add Actual Prepayment Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -247,6 +275,105 @@ export const PrepaymentSimulatorTab: React.FC<PrepaymentSimulatorTabProps> = ({
                   {simResult?.simulatedPayoffDate}
                 </span>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Prepay vs Invest Arbitrage Analyzer */}
+        <div className="mt-8 pt-6 border-t border-stone-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-stone-900">
+                  Prepay vs. Invest Comparison
+                </span>
+                <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-900 rounded">
+                  Arbitrage Strategy
+                </span>
+              </div>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Compare guaranteed interest avoided by prepaying vs. compounding wealth if invested in equities/mutual funds
+              </p>
+            </div>
+
+            {/* Expected ROI Selector */}
+            <div className="flex items-center gap-3 bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 self-start sm:self-auto">
+              <span className="text-[11px] font-semibold text-stone-600">Assumed Equity Return:</span>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="range"
+                  min="6"
+                  max="16"
+                  step="0.5"
+                  value={investReturnRate}
+                  onChange={(e) => setInvestReturnRate(Number(e.target.value))}
+                  className="w-20 accent-amber-600 h-1.5 bg-stone-200 rounded cursor-pointer"
+                />
+                <span className="font-mono font-bold text-xs text-stone-900 w-10 text-right">
+                  {investReturnRate}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Option A: Prepay */}
+            <div className="p-4 bg-white border border-stone-200 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-stone-500 uppercase">Option A: Prepay Loan</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded border border-emerald-200">
+                  Guaranteed {loan.annualInterestRate}%
+                </span>
+              </div>
+              <div className="text-xl font-bold font-serif text-emerald-700">
+                ₹{interestSaved.toLocaleString('en-IN')}
+              </div>
+              <p className="text-[11px] text-stone-500 leading-snug">
+                Direct interest avoided. Risk-free, tax-free effective return of {loan.annualInterestRate}% per annum.
+              </p>
+            </div>
+
+            {/* Option B: Invest */}
+            <div className="p-4 bg-white border border-stone-200 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-stone-500 uppercase">Option B: Invest in Market</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-200">
+                  Compounding @ {investReturnRate}%
+                </span>
+              </div>
+              <div className="text-xl font-bold font-serif text-blue-700">
+                ₹{investmentGain.toLocaleString('en-IN')}
+              </div>
+              <p className="text-[11px] text-stone-500 leading-snug">
+                Estimated wealth created over ~{remainingYears.toFixed(1)} years at {investReturnRate}% CAGR market growth.
+              </p>
+            </div>
+
+            {/* Strategy Insight / Arbitrage Verdict */}
+            <div className={`p-4 rounded-xl border space-y-2 ${
+              arbitrageDifference > 0 
+                ? 'bg-blue-50/70 border-blue-200' 
+                : 'bg-emerald-50/70 border-emerald-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-stone-700">
+                  Strategy Verdict
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white text-stone-900 shadow-2xs">
+                  {arbitrageDifference > 0 ? 'Investing Outperforms' : 'Prepayment Outperforms'}
+                </span>
+              </div>
+              <div className={`text-xl font-bold font-serif ${
+                arbitrageDifference > 0 ? 'text-blue-800' : 'text-emerald-800'
+              }`}>
+                {arbitrageDifference > 0 ? '+' : ''}₹{Math.abs(arbitrageDifference).toLocaleString('en-IN')}
+              </div>
+              <p className="text-[11px] text-stone-600 leading-snug">
+                {arbitrageDifference > 0 
+                  ? `Investing generates ₹${arbitrageDifference.toLocaleString('en-IN')} more wealth than prepaying, assuming ${investReturnRate}% returns.`
+                  : `Prepaying saves ₹${Math.abs(arbitrageDifference).toLocaleString('en-IN')} more, locking in a guaranteed risk-free return.`
+                }
+              </p>
             </div>
           </div>
         </div>

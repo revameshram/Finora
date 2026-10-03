@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "nw_liabilities")
@@ -16,6 +17,11 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @SuperBuilder
 public class Liability extends LinkableEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(length = 64)
+    private String id;
 
     @Column(name = "user_id", nullable = false)
     private String userId;
@@ -41,4 +47,12 @@ public class Liability extends LinkableEntity {
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at", nullable = false)
+    @Builder.Default
+    private LocalDateTime updatedAt = LocalDateTime.now();
 }

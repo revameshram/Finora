@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useToast } from '../shared/ToastContext';
-import { Money, InsightsCard } from '../shared';
+import { Money } from '../shared';
 import {
   TrendingUp,
   Receipt,
@@ -18,6 +17,7 @@ import {
   Clock,
   CheckCircle2,
 } from 'lucide-react';
+import { SuiteInsightsView } from '../insights/SuiteInsightsView';
 
 interface WorkspaceHubProps {
   onNavigateToModule: (moduleId: string) => void;
@@ -25,7 +25,6 @@ interface WorkspaceHubProps {
 
 export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }) => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'tools' | 'insights'>('tools');
 
   // Rollup Stat Block for Profile (sourced from Expense Tracker per §2.1)
@@ -41,7 +40,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
       id: 'expense-tracker',
       title: 'Expense Tracker',
       tagline: 'Cash Flow Ledger & Envelopes',
-      track: 'Track B',
+      category: 'Cash Flow',
       status: 'Ready',
       icon: Receipt,
       badgeColor: 'bg-[#FEF3C7] text-[#B45309] border-[#B45309]/30',
@@ -57,23 +56,23 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
       id: 'portfolio-tracker',
       title: 'Portfolio Tracker',
       tagline: 'Multi-Asset Performance & XIRR',
-      track: 'Track A',
-      status: 'In Progress',
+      category: 'Investments',
+      status: 'Ready',
       icon: TrendingUp,
-      badgeColor: 'bg-[#FAFAF9] text-[#1C1917] border-[#E7E5E4]',
+      badgeColor: 'bg-[#FEF3C7] text-[#B45309] border-[#B45309]/30',
       description: 'Equities, Mutual Funds, US Stocks, and Bullion with live Yahoo Finance/AMFI valuation.',
       summaryData: {
         metric: '₹42,50,000 Holdings',
         subtext: '+18.4% YoY · Multi-asset allocation',
       },
-      cta: 'Preview Holdings',
-      action: () => toast.info('Track A: Portfolio Tracker module ships next with Reva'),
+      cta: 'Open Portfolio Tracker',
+      action: () => onNavigateToModule('portfolio-tracker'),
     },
     {
       id: 'net-worth-tracker',
       title: 'Net Worth Tracker',
       tagline: 'Assets, Liabilities & Growth Engine',
-      track: 'Track A',
+      category: 'Wealth',
       status: 'Ready',
       icon: Layers,
       badgeColor: 'bg-[#FEF3C7] text-[#B45309] border-[#B45309]/30',
@@ -89,7 +88,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
       id: 'goal-manager',
       title: 'Goal Manager',
       tagline: 'Target Timelines & Investment Links',
-      track: 'Track A',
+      category: 'Planning',
       status: 'Ready',
       icon: Target,
       badgeColor: 'bg-[#FEF3C7] text-[#B45309] border-[#B45309]/30',
@@ -105,7 +104,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
       id: 'fire-planner',
       title: 'FIRE Planner',
       tagline: 'Financial Independence Engine',
-      track: 'Track A',
+      category: 'Retirement',
       status: 'Ready',
       icon: Flame,
       badgeColor: 'bg-[#FEF3C7] text-[#B45309] border-[#B45309]/30',
@@ -121,7 +120,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
       id: 'vault',
       title: 'Vault',
       tagline: 'Zero-Knowledge Encrypted Locker',
-      track: 'Track B',
+      category: 'Security',
       status: 'Active',
       icon: ShieldCheck,
       badgeColor: 'bg-[#FEF3C7] text-[#B45309] border-[#B45309]/30',
@@ -137,7 +136,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
       id: 'trip-manager',
       title: 'Trip Manager',
       tagline: 'Multi-Currency Travel Budgets',
-      track: 'Track B',
+      category: 'Travel',
       status: 'Ready',
       icon: Compass,
       badgeColor: 'bg-[#FEF3C7] text-[#B45309] border-[#B45309]/30',
@@ -153,7 +152,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
       id: 'emi-manager',
       title: 'EMI Manager',
       tagline: 'Amortization & Prepayment Calculator',
-      track: 'Track B',
+      category: 'Debt',
       status: 'Ready',
       icon: CreditCard,
       badgeColor: 'bg-[#FEF3C7] text-[#B45309] border-[#B45309]/30',
@@ -179,10 +178,10 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
               </span>
             </div>
             <h2 className="text-xl font-serif font-bold text-[#1C1917] mt-0.5">
-              Welcome back, {user?.fullName || 'Alok'}
+              Welcome back, {user?.fullName || 'Investor'}
             </h2>
             <p className="text-xs text-[#78716C]">
-              Consolidated financial rollup sourced from active suite modules.
+              Consolidated financial rollup sourced from your active accounts.
             </p>
           </div>
 
@@ -190,7 +189,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
             <button
               type="button"
               onClick={() => onNavigateToModule('expense-tracker')}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#1C1917] hover:bg-[#342D27] rounded-lg shadow-xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#B88728] hover:bg-[#a67520] rounded-lg shadow-xs transition-colors"
             >
               <Receipt className="h-3.5 w-3.5 text-[#FEF3C7]" />
               <span>Open Expense Tracker</span>
@@ -200,7 +199,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
         </div>
 
         {/* 4-Metric Rollup Strip */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="p-3.5 bg-[#FAFAF9] rounded-lg border border-[#E7E5E4]">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-[#78716C]">
               <ArrowDownLeft className="h-3.5 w-3.5 text-[#B45309]" />
@@ -236,7 +235,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
 
           <div className="p-3.5 bg-[#FAFAF9] rounded-lg border border-[#E7E5E4]">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-[#78716C]">
-              <CheckCircle2 className="h-3.5 w-3.5 text-[#1C1917]" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-[#B88728]" />
               <span>Liquid Net Position</span>
             </div>
             <div className="text-lg font-bold text-[#1C1917] mt-1 tabular-nums">
@@ -247,19 +246,19 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
         </div>
       </div>
 
-      {/* Top Tabs: Tools (Module Catalog) vs Suite Insights (§2.5) */}
+      {/* Top Tabs: Tools vs Suite Insights (§2.5) */}
       <div className="flex items-center gap-2 border-b border-[#E7E5E4]">
         <button
           type="button"
           onClick={() => setActiveTab('tools')}
           className={`inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all ${
             activeTab === 'tools'
-              ? 'border-[#1C1917] text-[#1C1917]'
+              ? 'border-[#B88728] text-[#B88728]'
               : 'border-transparent text-[#78716C] hover:text-[#1C1917]'
           }`}
         >
           <Layers className="h-4 w-4" />
-          <span>Tools (Module Catalog)</span>
+          <span>Financial Tools</span>
         </button>
 
         <button
@@ -267,7 +266,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
           onClick={() => setActiveTab('insights')}
           className={`inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all ${
             activeTab === 'insights'
-              ? 'border-[#1C1917] text-[#1C1917]'
+              ? 'border-[#B88728] text-[#B88728]'
               : 'border-transparent text-[#78716C] hover:text-[#1C1917]'
           }`}
         >
@@ -279,7 +278,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
         </button>
       </div>
 
-      {/* Tab 1: Tools / Module Grid */}
+      {/* Tab 1: Tools Grid */}
       {activeTab === 'tools' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {MODULE_TILES.map((tile) => {
@@ -287,21 +286,16 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
             return (
               <div
                 key={tile.id}
-                className="bg-white p-5 rounded-xl border border-[#E7E5E4] flex flex-col justify-between space-y-4 hover:border-[#1C1917] transition-all shadow-xs group"
+                className="bg-white p-4 sm:p-5 rounded-xl border border-[#E7E5E4] flex flex-col justify-between space-y-4 hover:border-[#B88728] transition-all shadow-xs group"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="p-2.5 rounded-lg bg-[#FAFAF9] border border-[#E7E5E4] text-[#1C1917] group-hover:bg-[#1C1917] group-hover:text-white transition-colors">
+                    <div className="p-2.5 rounded-lg bg-[#FAFAF9] border border-[#E7E5E4] text-[#1C1917] group-hover:bg-[#B88728] group-hover:text-white transition-colors">
                       <Icon className="h-5 w-5" />
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-[#78716C] bg-[#FAFAF9] px-1.5 py-0.5 rounded border border-[#E7E5E4]">
-                        {tile.track}
-                      </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${tile.badgeColor}`}>
-                        {tile.status}
-                      </span>
-                    </div>
+                    <span className="text-[10px] font-bold text-[#B45309] bg-[#FEF3C7] px-2 py-0.5 rounded border border-[#B45309]/20">
+                      {tile.category}
+                    </span>
                   </div>
 
                   <div>
@@ -324,11 +318,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
                   <button
                     type="button"
                     onClick={tile.action}
-                    className={`w-full py-2 px-3 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
-                      tile.status === 'Ready'
-                        ? 'bg-[#1C1917] hover:bg-[#342D27] text-white shadow-xs'
-                        : 'bg-[#FAFAF9] hover:bg-white text-[#1C1917] border border-[#E7E5E4]'
-                    }`}
+                    className="w-full py-2 px-3 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors bg-[#B88728] hover:bg-[#a67520] text-white shadow-xs"
                   >
                     <span>{tile.cta}</span>
                     <ArrowRight className="h-3 w-3" />
@@ -342,101 +332,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ onNavigateToModule }
 
       {/* Tab 2: Suite-Wide Composite Insights (§2.5) */}
       {activeTab === 'insights' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-xl border border-[#E7E5E4] shadow-xs space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-4 border-b border-[#E7E5E4] gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-[#B45309]" />
-                  <h3 className="text-sm font-bold text-[#1C1917]">
-                    Suite-Wide Financial Health Composite
-                  </h3>
-                </div>
-                <p className="text-xs text-[#78716C] mt-0.5">
-                  Cross-module score evaluating Net Worth velocity, debt ratios, and liquid cash burn.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <span className="text-[10px] font-semibold text-[#78716C] uppercase tracking-wider block">
-                    Composite Score
-                  </span>
-                  <span className="text-2xl font-serif font-bold text-[#B45309] tabular-nums">
-                    88 / 100
-                  </span>
-                </div>
-                <span className="px-3 py-1 text-xs font-bold rounded-md border bg-[#FEF3C7] text-[#B45309] border-[#B45309]/30">
-                  Excellent
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-              <div className="p-3.5 bg-[#FAFAF9] rounded-lg border border-[#E7E5E4] space-y-1">
-                <span className="text-xs font-semibold text-[#78716C] block">Total Liquid Cushion</span>
-                <span className="text-base font-bold text-[#1C1917] block tabular-nums">
-                  <Money amount={750000} />
-                </span>
-                <span className="text-[10px] text-[#78716C] block">8.1 Months of Outflow Runway</span>
-              </div>
-
-              <div className="p-3.5 bg-[#FAFAF9] rounded-lg border border-[#E7E5E4] space-y-1">
-                <span className="text-xs font-semibold text-[#78716C] block">Debt-to-Asset Ratio</span>
-                <span className="text-base font-bold text-[#1C1917] block tabular-nums">8.2%</span>
-                <span className="text-[10px] text-[#78716C] block">Target: &lt; 25% (Conservative)</span>
-              </div>
-
-              <div className="p-3.5 bg-[#FAFAF9] rounded-lg border border-[#E7E5E4] space-y-1">
-                <span className="text-xs font-semibold text-[#78716C] block">FIRE Horizon Forecast</span>
-                <span className="text-base font-bold text-[#B45309] block tabular-nums">11.4 Years</span>
-                <span className="text-[10px] text-[#78716C] block">Assuming 12% equity compounding</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InsightsCard
-              type="positive"
-              sourceModule="PORTFOLIO"
-              title="Equity Portfolio Outperformed NIFTY 50"
-              description="Your investment portfolio returned +18.4% YoY, generating a 4.2% alpha over the index benchmark."
-              metric="+18.4% YoY"
-            />
-
-            <InsightsCard
-              type="positive"
-              sourceModule="EXPENSE"
-              title="53.8% Monthly Savings Rate"
-              description="Your monthly cash retention is well above the 20% benchmark, allowing consistent SIP investments."
-              metric="₹1,07,500 Saved"
-              action={{
-                label: 'View Expense Breakdown',
-                onClick: () => onNavigateToModule('expense-tracker'),
-              }}
-            />
-          </div>
-
-          {/* Learn Center Callout */}
-          <div className="p-5 bg-gradient-to-r from-stone-900 via-stone-800 to-amber-950 text-white rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300">
-                Educational Knowledge Hub
-              </span>
-              <h4 className="text-sm font-bold">Deep Dive into Finora's 8 Financial Frameworks</h4>
-              <p className="text-xs text-stone-300 max-w-xl">
-                Read practical formulas and rules of thumb on debt prepayment math, SWR modeling, and zero-knowledge encryption.
-              </p>
-            </div>
-
-            <button
-              onClick={() => onNavigateToModule('learn')}
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold rounded-xl text-xs flex items-center gap-1.5 flex-shrink-0 transition-colors shadow-xs"
-            >
-              Explore 8 Guides
-            </button>
-          </div>
-        </div>
+        <SuiteInsightsView onNavigateToModule={onNavigateToModule} />
       )}
     </div>
   );

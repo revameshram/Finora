@@ -279,7 +279,7 @@ export const Vault: React.FC = () => {
               setEditingNote(null);
               setIsNoteModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-[#1C1917] hover:bg-[#342D27] rounded-md shadow-2xs transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#B88728] hover:bg-[#a67520] rounded-md shadow-2xs transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>New Note</span>
@@ -288,7 +288,7 @@ export const Vault: React.FC = () => {
           <button
             type="button"
             onClick={handleLockVault}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#BE123C] bg-[#FFE4E6] hover:bg-[#FECDD3] rounded-md border border-[#BE123C]/20 shadow-2xs transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-[#BE123C] bg-[#FFE4E6] hover:bg-[#FECDD3] rounded-md border border-[#BE123C]/20 shadow-2xs transition-colors"
             title="Purge decryption keys and lock vault"
           >
             <Lock className="h-3.5 w-3.5" />
@@ -306,7 +306,7 @@ export const Vault: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search labels or descriptions..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-md border border-[#E7E5E4] bg-white text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#1C1917]"
+            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-md border border-[#E7E5E4] bg-white text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#B88728]"
           />
         </div>
 
@@ -317,7 +317,7 @@ export const Vault: React.FC = () => {
             onClick={() => setSelectedTag('ALL')}
             className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
               selectedTag === 'ALL'
-                ? 'bg-[#1C1917] text-white shadow-2xs'
+                ? 'bg-[#B88728] text-white shadow-2xs'
                 : 'bg-white text-[#78716C] border border-[#E7E5E4] hover:bg-[#FAFAF9]'
             }`}
           >
@@ -330,7 +330,7 @@ export const Vault: React.FC = () => {
               onClick={() => setSelectedTag(tagKey)}
               className={`px-2.5 py-1 text-xs font-semibold rounded-md whitespace-nowrap transition-colors ${
                 selectedTag === tagKey
-                  ? 'bg-[#1C1917] text-white shadow-2xs'
+                  ? 'bg-[#B88728] text-white shadow-2xs'
                   : 'bg-white text-[#78716C] border border-[#E7E5E4] hover:bg-[#FAFAF9]'
               }`}
             >

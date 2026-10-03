@@ -131,7 +131,7 @@ export const CopyMonthModal: React.FC<CopyMonthModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || !fromMonth}
-              className="px-4 py-1.5 text-xs font-semibold rounded-md bg-[#1C1917] hover:bg-[#342D27] text-white disabled:opacity-50 transition-colors shadow-xs"
+              className="px-4 py-1.5 text-xs font-semibold rounded-md bg-[#B88728] hover:bg-[#a67520] text-white disabled:opacity-50 transition-colors shadow-xs"
             >
               {isSubmitting ? 'Copying...' : 'Duplicate Setup'}
             </button>

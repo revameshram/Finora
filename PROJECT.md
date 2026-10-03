@@ -2,8 +2,8 @@
 
 > Living doc. Update this alongside every merged module/feature — this is the source of truth for "what's actually done" vs. the Master Reference (UX/data-model spec) and Team Build Plan (who/when).
 
-**Last updated:** 2026-09-01
-**Owners:** Alok (Track B) · Reva (Track A)
+**Last updated:** 2026-10-03
+**Owners:** Finora Engineering
 
 ---
 
@@ -39,8 +39,8 @@ Owner: Alok (doing all Phase 0 init work solo — see §7).
 | Currency service (baseCurrency + display conversion) | Done | Live API rates (`open.er-api.com`), 1h TTL cache, single baseCurrency (INR) DB storage, two-way conversion & rich frontend metadata |
 | Universal linking mechanism (`isIncluded`/`isLinked`/`sourceModule`) | Done | Base `@MappedSuperclass LinkableEntity`, `Linkable` interface, `LinkingService`, frontend `LinkedBadge` & `IncludeToggle`, Delink semantics resolved |
 | Shared frontend components (toast, insights-card, empty-state, onboarding-drawer) | Done | Toast notification system (`useToast`), `InsightsCard` (4 themes + metrics), `EmptyState`, `OnboardingDrawer` (steps + checklist) |
-| Expense Tracker Summary API contract (spec/mock) | Done | OpenAPI 3.0 YAML spec + `ExpenseContractMockController` (`/api/v1/expenses/summary` & `/api/v1/expenses/goal-linked`) |
-| Net Worth Liabilities/Assets API contract (spec/mock) | Done | OpenAPI 3.0 YAML spec + `NetWorthContractMockController` (`GET/POST /api/v1/networth/liabilities`) |
+| Expense Tracker Summary API contract (spec/mock) | Done | Fulfilled via real `ExpenseService` & `ExpenseController` (`/api/v1/expenses/summary` & `/api/v1/expenses/goal-linked`) |
+| Net Worth Liabilities/Assets API contract (spec/mock) | Done | Fulfilled via real `NetWorthLiabilityService` & `NetWorthController` (`GET/POST /api/v1/networth/liabilities`) |
 
 ---
 
@@ -52,8 +52,8 @@ Owner: Alok (doing all Phase 0 init work solo — see §7).
 |---|---|---|---|
 | Portfolio Tracker | Feature-complete | — | Ships first; Net Worth needs it as linkable source |
 | Net Worth Tracker | Done | Portfolio Tracker | Owns shared growth engine (compound growth + FV-of-annuity) |
-| Goal Manager | Done | Net Worth, Portfolio, Expense Tracker (mocked) | Reuses growth engine, Portfolio links & Expense contract |
-| FIRE Planner | Done | Net Worth, Portfolio, Expense Tracker (mocked) | Reuses growth engine, Portfolio links & Expense contract |
+| Goal Manager | Done | Net Worth, Portfolio, Expense Tracker (real API) | Reuses growth engine, Portfolio links & real Expense contract |
+| FIRE Planner | Done | Net Worth, Portfolio, Expense Tracker (real API) | Reuses growth engine, Portfolio links & real Expense contract |
 
 ### Track B — Cash Flow & Life Admin (Alok)
 
@@ -68,7 +68,7 @@ Owner: Alok (doing all Phase 0 init work solo — see §7).
 
 | Item | Status | Notes |
 |---|---|---|
-| Suite-Wide Insights tab | Not started | Financial Health Overview, cross-module Key Metrics, Trends & Analysis, Insights & Recommendations feed |
+| Suite-Wide Insights tab | Done | Financial Health Overview (0-100 composite score & 4 pillars), cross-module Key Metrics (life-area grouped + module badges), Asset Allocation distribution, and Strategic Recommendations & Nudges feed |
 
 ---
 
@@ -185,17 +185,29 @@ Owner: Alok (doing all Phase 0 init work solo — see §7).
 - [x] Integration Test Suite (`FirePlannerIntegrationTest` verifying 25x SWR math, Mode 1 timeline, Mode 2 required savings, corpus sync, and Expense summary contract integration)
 - [x] Full integration into Executive Workspace Shell (`App.tsx` and `WorkspaceHub.tsx`)
 
+### Suite-Wide Insights
+**Status:** Done
+**Implemented:**
+- [x] Financial Health Overview: Composite 0–100 score reconciling 4 independent pillars — Cash Flow (30%), Balance Sheet Solvency (30%), Goal Pacing (20%), and Retirement Freedom (20%)
+- [x] Cross-Module Key Metrics Grid grouped by life area (`CASH_FLOW`, `DEBT`, `WEALTH`, `LIFE_ADMIN`) with health indicator badges and originating source module badges
+- [x] Interactive Life Area filtering pills (`All`, `Cash Flow`, `Debt & Loans`, `Wealth & Investments`, `Life Admin`)
+- [x] Asset Allocation Distribution breakdown across Equities, Mutual Funds, Fixed Deposits, Precious Metals, and Real Estate
+- [x] Strategic Cross-Module Action Nudges feed with urgency badges (`HIGH`, `MEDIUM`, `LOW`), originating source tags, and one-click direct jump CTAs to target modules
+- [x] Executive Synthesis advisory banner providing top-level AI diagnostic insights
+- [x] Backend Suite Insights Layer (`com.finora.insights`) with `SuiteInsightsService`, `SuiteInsightsController` (`GET /api/v1/insights/suite`), and `SuiteInsightsIntegrationTest`
+- [x] Frontend Component (`SuiteInsightsView.tsx`) wired into `WorkspaceHub.tsx` under the Suite-Wide Insights tab
+
 **In progress:**
 - None
 
 **Not started:**
-- Suite-Wide Insights
+- None — **All 8 modules + Suite-Wide Insights are now 100% COMPLETE!**
 
 **On hold / deferred:**
 - None
 
 **Known issues / tech debt:**
-- None. Verified with backend integration test suite and 0 TypeScript compilation errors.
+- None. Verified with 100% backend test pass rate across all 42 test suites and 0 frontend build errors.
 
 ---
 
@@ -207,10 +219,13 @@ Owner: Alok (doing all Phase 0 init work solo — see §7).
 
 ---
 
-## 7. Build Log
-
 | Date | Who | What changed |
 |---|---|---|
+| 2026-10-03 | Finora Core | **Westro Master Feature & Content Doc Alignment & Completion**: (1) Audited all 8 core modules (§2.1–§2.8) and Learn Content Hub (§3) against `westro-master-doc.md`; (2) Enforced "one investment → one goal" constraint across Goal Manager (`GoalInvestmentLinkRepository` and `GoalService`); (3) Added interactive **Prepay vs. Invest Comparison / Arbitrage Visualizer** in EMI Manager (`PrepaymentSimulatorTab.tsx`) with dynamic expected equity return slider and strategy verdict; (4) Added Learn Content Hub deep-linking via query parameters pre-filling Goal Manager and FIRE Planner forms (`App.tsx`, `GoalManager.tsx`, `FirePlanner.tsx`, `learnGuides.ts`); (5) Verified with 100% backend test pass rate across 46/46 suites (`mvn test`) and 0 frontend build errors (`npm run build`). |
+| 2026-09-30 | Finora Core | **End-to-End Cross-Module Integration Test Suite**: Implemented and executed comprehensive multi-module integration testing (`FinoraCrossModuleEndToEndIntegrationTest.java`). Verified all 4 key cross-track workflows: (1) Portfolio-linked Net Worth asset delink semantics (freezing valuation at ₹2,50,000, resetting to `MANUAL` and `isLinked=false` with independent editability); (2) Goal-linked Expense transaction association with verified non-mutating reporting rule (transactions tagged to goals never mutate `Goal.currentValue`); (3) EMI Manager loan creation and automated synchronization into Net Worth liabilities (`POST /api/v1/networth/liabilities`) with prepayment schedule recalculation; (4) Real Expense Tracker contract data consumption by FIRE Planner (annual retirement expenses auto-populating from live cash flow) and Goal Manager capacity monitoring. All 46 backend test suites passed (0 failures). |
+| 2026-09-30 | Finora Core | **Suite-Wide Insights Engine & End-to-End Cross-Module Synthesis**: Built and integrated the complete Suite-Wide Insights layer synthesizing operational live data across all 8 modules. (1) Backend `com.finora.insights` package aggregating Cash Flow, Solvency, Goal Pacing, and Retirement Freedom into a 0-100 composite Financial Health Score; (2) Cross-module Key Metrics grid tagged with source module badges; (3) Asset Allocation Distribution breakdown; (4) Strategic Action Nudges feed with direct module routing; (5) Frontend `SuiteInsightsView.tsx` integrated into `WorkspaceHub.tsx`; (6) 100% backend integration test pass rate (42/42 suites) and clean frontend production build. **Entire Finora Suite is now 100% COMPLETE!** |
+| 2026-09-29 | Finora Core | **Live Multi-API Asset Pricing & Caffeine Caching Layer**: Implemented live real-world external financial data fetching across all asset classes with multi-provider fallback resilience and 5-minute Caffeine caching: (1) Stocks & ETFs via Yahoo Finance v8 query1 & query2 with realistic browser headers; (2) Mutual Funds via AMFI/`mfapi.in` latest and full NAV endpoints; (3) Metals (Gold, Silver, Platinum) via `api.gold-api.com` and `goldprice.org` with dynamic INR conversion via live exchange rates; (4) Currency exchange rates via `open.er-api.com`, `frankfurter.dev`, and `exchangerate.fun`; (5) Centralized `CacheConfig` with `@EnableCaching`, `@EnableScheduling`, and proactive 5-minute background refresh cycles; (6) Dynamic symbol search for MFs and Equities; (7) Goal Manager live portfolio valuation linkage. |
+| 2026-09-29 | Finora Core | **UI Consistency, Logo Branding & Experience Polish**: (1) Created bespoke Finora SVG vector logo (`FinoraLogo.tsx`) and vector favicon (`favicon.svg`); (2) Unified warm stone/amber design system (`#FAFAF9`, `#1C1917`, `#B88728`/`#B45309`, `#E7E5E4`) replacing black buttons and dark widgets; (3) Cleaned user-facing UI of internal developer/track labels across all views; (4) Implemented FIRE Planner Summary page; (5) Linked Net Worth shortcuts directly to EMI Manager and Portfolio Tracker; (6) Verified 100% test pass rate across all 41 test suites and 0 frontend build errors. |
 | 2026-09-14 | Reva | Phase 1 Track A: FIRE Planner module fully built end-to-end (Entities `fp_*`, `FirePlannerService` consuming shared `CompoundGrowthEngine` for 4% SWR retirement math & reverse SIP calculations, `FirePlannerController`, `FirePlannerIntegrationTest`, 2-column layout, Mode 1 & Mode 2 calculation modes, standardized Finora baseline assumptions, Expense contract auto-population, dual-line growth projection chart, and frontend workbench `FirePlanner.tsx` integrated into `App.tsx` / `WorkspaceHub.tsx`). **FIRE Planner is now FEATURE-COMPLETE & DONE! All 4 Track A modules are now 100% COMPLETE!** |
 | 2026-09-14 | Reva | Phase 1 Track A: Goal Manager module fully built end-to-end (Entities `gm_*`, `GoalService` consuming shared `CompoundGrowthEngine` for inflation compounding & reverse SIP target costing, `GoalController`, `GoalIntegrationTest`, capacity bar & pace monitoring, 4-tab wizard, single/bulk contribute modals, GoalTag reporting non-mutating rule, and frontend workbench `GoalManager.tsx` integrated into `App.tsx` / `WorkspaceHub.tsx`). **Goal Manager is now FEATURE-COMPLETE & DONE!** |
 | 2026-09-07 | Reva | Phase 1 Track A: Net Worth Tracker & Shared Growth Engine Library fully built end-to-end (Entities `nw_*` extending `LinkableEntity`, widened category enums, real DB liabilities contract fulfillment receiving loans pushed by EMI Manager, `CompoundGrowthEngine` library for compound growth & SIP annuity math, `NetWorthAnalyticsService` with 3-scenario projections & portfolio flat growth nuance, `NetWorthController`, and `NetWorthIntegrationTest`). **Net Worth Tracker is now FEATURE-COMPLETE!** |

@@ -17,10 +17,11 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { LearnCenter } from '../learn/LearnCenter';
+import { FinoraLogo } from '../shared/FinoraLogo';
 
 const PERSONA_AVATARS = [
-  { id: 'mid_male', src: '/avatars/profile-mid-adult-male.webp', label: 'Alok (Lead Dev)' },
-  { id: 'mid_female', src: '/avatars/profile-mid-adult-female.webp', label: 'Reva (Quantitative Dev)' },
+  { id: 'mid_male', src: '/avatars/profile-mid-adult-male.webp', label: 'Primary Member' },
+  { id: 'mid_female', src: '/avatars/profile-mid-adult-female.webp', label: 'Co-Planner / Partner' },
   { id: 'older_male', src: '/avatars/profile-older-male.webp', label: 'Executive / Retiring' },
   { id: 'older_female', src: '/avatars/profile-older-female.webp', label: 'Senior Investor' },
   { id: 'child_male', src: '/avatars/profile-child-male.webp', label: 'Dependent / Student' },
@@ -106,7 +107,7 @@ export const LandingPage: React.FC = () => {
       desc: 'Scope monthly budget envelopes, recurring debits, pending CC commitments, and cash velocity.',
       status: 'Ready',
       icon: Receipt,
-      track: 'Track B',
+      category: 'Cash Flow',
       badgeColor: 'bg-amber-100 text-amber-900 border-amber-300',
     },
     {
@@ -115,7 +116,7 @@ export const LandingPage: React.FC = () => {
       desc: 'Client-side AES-256-GCM encryption with timed 30-second secret reveal & 3 recovery backup codes.',
       status: 'Ready',
       icon: ShieldCheck,
-      track: 'Track B',
+      category: 'Security',
       badgeColor: 'bg-amber-100 text-amber-900 border-amber-300',
     },
     {
@@ -124,7 +125,7 @@ export const LandingPage: React.FC = () => {
       desc: 'Day-by-day itinerary stops, AI itinerary generation, Smart Split solver, and debt settle matrix.',
       status: 'Ready',
       icon: Compass,
-      track: 'Track B',
+      category: 'Travel',
       badgeColor: 'bg-amber-100 text-amber-900 border-amber-300',
     },
     {
@@ -133,44 +134,44 @@ export const LandingPage: React.FC = () => {
       desc: 'Institutional reducing balance schedule calculation, prepayment simulation, and Net Worth sync.',
       status: 'Ready',
       icon: CreditCard,
-      track: 'Track B',
+      category: 'Debt',
       badgeColor: 'bg-amber-100 text-amber-900 border-amber-300',
     },
     {
       title: 'Portfolio Tracker',
       tagline: 'Multi-Asset Equity Ledger',
       desc: 'Indian and US stocks, mutual funds, sovereign gold bonds, crypto, real-time USD/INR conversions.',
-      status: 'Track A',
+      status: 'Ready',
       icon: TrendingUp,
-      track: 'Track A',
-      badgeColor: 'bg-stone-100 text-stone-700 border-stone-300',
+      category: 'Investments',
+      badgeColor: 'bg-amber-100 text-amber-900 border-amber-300',
     },
     {
       title: 'Net Worth Tracker',
       tagline: 'Consolidated Balance Sheet',
       desc: 'Total liquid and fixed assets minus outstanding debt, powered by a compound growth engine.',
-      status: 'Track A',
+      status: 'Ready',
       icon: Layers,
-      track: 'Track A',
-      badgeColor: 'bg-stone-100 text-stone-700 border-stone-300',
+      category: 'Wealth',
+      badgeColor: 'bg-amber-100 text-amber-900 border-amber-300',
     },
     {
       title: 'Goal Manager',
       tagline: 'Target SIP Calculator',
       desc: 'Horizon-matched reverse SIP engineering, inflation adjustments, and milestone linkages.',
-      status: 'Track A',
+      status: 'Ready',
       icon: Target,
-      track: 'Track A',
-      badgeColor: 'bg-stone-100 text-stone-700 border-stone-300',
+      category: 'Planning',
+      badgeColor: 'bg-amber-100 text-amber-900 border-amber-300',
     },
     {
       title: 'FIRE Planner',
       tagline: 'Retirement Freedom Engine',
       desc: 'Safe withdrawal rates, 25x rule, Lean/Coast/Fat FIRE models, and sequence-of-returns buffers.',
-      status: 'Track A',
+      status: 'Ready',
       icon: Flame,
-      track: 'Track A',
-      badgeColor: 'bg-stone-100 text-stone-700 border-stone-300',
+      category: 'Retirement',
+      badgeColor: 'bg-amber-100 text-amber-900 border-amber-300',
     },
   ];
 
@@ -184,13 +185,10 @@ export const LandingPage: React.FC = () => {
               onClick={() => setCurrentView('landing')}
               className="flex items-center space-x-2.5 text-left group"
             >
-              <div className="w-8 h-8 rounded-lg bg-stone-900 text-white flex items-center justify-center font-serif font-bold text-base shadow-xs group-hover:bg-amber-700 transition-colors">
-                F
-              </div>
-              <div>
-                <span className="font-serif font-bold text-lg text-stone-900 leading-none">Finora</span>
-                <span className="block text-[10px] text-stone-400 font-sans tracking-wide">Knowledge Hub</span>
-              </div>
+              <FinoraLogo size="sm" variant="full" showTagline={false} />
+              <span className="text-[10px] text-stone-400 font-sans tracking-wide pl-2 border-l border-stone-200">
+                Knowledge Hub
+              </span>
             </button>
 
             <div className="flex items-center gap-3">
@@ -226,15 +224,7 @@ export const LandingPage: React.FC = () => {
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-[#E7E5E4]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-stone-900 text-white flex items-center justify-center font-serif font-bold text-lg shadow-xs">
-              F
-            </div>
-            <div>
-              <span className="font-serif font-bold text-xl text-stone-900 leading-none">Finora</span>
-              <span className="block text-[10px] text-stone-400 font-sans tracking-wide">
-                Wealth clarity, amplified
-              </span>
-            </div>
+            <FinoraLogo size="md" variant="full" />
           </div>
 
           <div className="flex items-center space-x-3">
@@ -340,17 +330,15 @@ export const LandingPage: React.FC = () => {
               <div
                 key={i}
                 onClick={() => setIsAuthModalOpen(true)}
-                className="bg-white border border-stone-200 hover:border-amber-400 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between space-y-3"
+                className="bg-white border border-stone-200 hover:border-amber-400 rounded-2xl p-4 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between space-y-3"
               >
                 <div>
                   <div className="flex items-start justify-between">
                     <div className="w-10 h-10 rounded-xl bg-stone-50 border border-stone-200 flex items-center justify-center text-stone-800 group-hover:bg-amber-50 group-hover:text-amber-800 group-hover:border-amber-300 transition-colors">
                       <Icon className="w-5 h-5" />
                     </div>
-                    <span
-                      className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded border ${mod.badgeColor}`}
-                    >
-                      {mod.status}
+                    <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md border border-amber-200 bg-amber-50/80 text-amber-800">
+                      {mod.category}
                     </span>
                   </div>
 
@@ -364,10 +352,9 @@ export const LandingPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-400">
-                  <span className="text-[11px] font-medium">{mod.track}</span>
-                  <span className="font-bold text-amber-700 group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
-                    Open
+                <div className="pt-3 border-t border-stone-100 flex items-center justify-end text-xs text-stone-400">
+                  <span className="font-bold text-amber-700 group-hover:translate-x-0.5 transition-transform flex items-center gap-1 text-xs">
+                    Explore
                     <ChevronRight className="w-3.5 h-3.5" />
                   </span>
                 </div>
@@ -406,7 +393,7 @@ export const LandingPage: React.FC = () => {
       <footer className="border-t border-[#E7E5E4] bg-white py-8 text-xs text-stone-500 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
-            <span className="font-serif font-bold text-stone-900">Finora</span>
+            <FinoraLogo size="xs" variant="full" showTagline={false} />
             <span>•</span>
             <span>Privacy-First Personal Financial Architecture</span>
           </div>
@@ -427,69 +414,53 @@ export const LandingPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl border border-stone-200 w-full max-w-md overflow-hidden p-6 space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-stone-200">
-              <div>
-                <h3 className="text-base font-bold text-stone-900">
-                  {authMode === 'login' ? 'Sign In to Finora' : 'Create Free Account'}
-                </h3>
-                <p className="text-xs text-stone-500">
-                  {authMode === 'login' ? 'Choose demo profile or enter credentials' : 'Set up your master profile'}
-                </p>
+              <div className="flex items-center gap-3">
+                <FinoraLogo size="sm" variant="icon" />
+                <div>
+                  <h3 className="text-base font-bold text-stone-900">
+                    {authMode === 'login' ? 'Sign In to Finora' : 'Create Free Account'}
+                  </h3>
+                  <p className="text-xs text-stone-500">
+                    {authMode === 'login' ? 'Choose demo profile or enter credentials' : 'Set up your master profile'}
+                  </p>
+                </div>
               </div>
               <button onClick={() => setIsAuthModalOpen(false)}>
                 <X className="w-5 h-5 text-stone-400 hover:text-stone-700" />
               </button>
             </div>
 
-            {/* 1-Click Demo Profiles Strip */}
+            {/* 1-Click Demo Profile Strip */}
             <div className="space-y-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">
-                1-Click Demo Profiles
+                1-Click Demo Profile
               </span>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleDemoLogin(
-                      'alok@finora.local',
-                      'Alok Sharma',
-                      '/avatars/profile-mid-adult-male.webp'
-                    )
-                  }
-                  className="p-2.5 bg-stone-50 hover:bg-amber-50 border border-stone-200 hover:border-amber-300 rounded-xl flex items-center gap-2.5 text-left transition-colors"
-                >
-                  <img
-                    src="/avatars/profile-mid-adult-male.webp"
-                    alt="Alok"
-                    className="w-8 h-8 rounded-full border border-stone-200 object-cover"
-                  />
+              <button
+                type="button"
+                onClick={() =>
+                  handleDemoLogin(
+                    'alok@finora.local',
+                    'Alok Sharma',
+                    '/avatars/profile-mid-adult-male.webp'
+                  )
+                }
+                className="w-full p-2.5 bg-stone-50 hover:bg-amber-50 border border-stone-200 hover:border-amber-300 rounded-xl flex items-center gap-2.5 text-left transition-colors"
+              >
+                <img
+                  src="/avatars/profile-mid-adult-male.webp"
+                  alt="Demo Investor"
+                  className="w-8 h-8 rounded-full border border-stone-200 object-cover"
+                />
+                <div className="flex-1 flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-stone-900 block">Alok</span>
-                    <span className="text-[10px] text-stone-500">Track B Lead</span>
+                    <span className="text-xs font-bold text-stone-900 block">Primary Account</span>
+                    <span className="text-[10px] text-stone-500">Personal Wealth & Cash Flow Suite</span>
                   </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleDemoLogin(
-                      'reva@finora.local',
-                      'Reva Meshram',
-                      '/avatars/profile-mid-adult-female.webp'
-                    )
-                  }
-                  className="p-2.5 bg-stone-50 hover:bg-amber-50 border border-stone-200 hover:border-amber-300 rounded-xl flex items-center gap-2.5 text-left transition-colors"
-                >
-                  <img
-                    src="/avatars/profile-mid-adult-female.webp"
-                    alt="Reva"
-                    className="w-8 h-8 rounded-full border border-stone-200 object-cover"
-                  />
-                  <div>
-                    <span className="text-xs font-bold text-stone-900 block">Reva</span>
-                    <span className="text-[10px] text-stone-500">Track A Lead</span>
-                  </div>
-                </button>
-              </div>
+                  <span className="px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-900 rounded">
+                    Instant Access
+                  </span>
+                </div>
+              </button>
             </div>
 
             {/* Custom Credentials Form */}

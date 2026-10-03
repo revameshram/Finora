@@ -29,9 +29,7 @@ public class AuthService {
 
     @PostConstruct
     public void seedInitialDemoUsers() {
-        seedUserIfNotExists("demo@finora.local", "Demo User", "password123", "INR");
-        seedUserIfNotExists("alok@finora.local", "Alok Kumar", "password123", "INR");
-        seedUserIfNotExists("reva@finora.local", "Reva Sharma", "password123", "INR");
+        seedUserIfNotExists("alok@finora.local", "Alok Sharma", "password123", "INR");
     }
 
     private void seedUserIfNotExists(String email, String fullName, String rawPassword, String currency) {

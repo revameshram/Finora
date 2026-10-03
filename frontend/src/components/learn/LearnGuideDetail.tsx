@@ -162,7 +162,7 @@ export const LearnGuideDetail: React.FC<LearnGuideDetailProps> = ({
         <div className="space-y-2.5">
           {guide.practicalSteps.map((step, idx) => (
             <div key={idx} className="p-3.5 bg-stone-50 rounded-xl flex items-start gap-3 text-xs text-stone-800 font-medium">
-              <span className="w-5 h-5 rounded-full bg-stone-900 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">
+              <span className="w-5 h-5 rounded-full bg-[#B88728] text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">
                 {idx + 1}
               </span>
               <span className="leading-relaxed">{step}</span>
@@ -173,18 +173,18 @@ export const LearnGuideDetail: React.FC<LearnGuideDetailProps> = ({
 
       {/* Bottom CTA */}
       {guide.moduleTarget && onNavigateToModule && (
-        <div className="p-6 bg-stone-900 text-white rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-6 bg-[#FAFAF9] border border-amber-200 text-[#1C1917] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
           <div>
             <h4 className="text-sm font-bold">Ready to apply these principles?</h4>
-            <p className="text-xs text-stone-400 mt-0.5">
+            <p className="text-xs text-[#78716C] mt-0.5">
               Open the dedicated tool inside your Finora privacy-first workspace.
             </p>
           </div>
           <button
             onClick={() => onNavigateToModule(guide.moduleTarget!)}
-            className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold rounded-xl text-xs flex items-center gap-2 self-start sm:self-auto transition-colors"
+            className="px-5 py-2.5 bg-[#B88728] hover:bg-[#a67520] text-white font-semibold rounded-xl text-xs flex items-center gap-2 self-start sm:self-auto transition-colors shadow-xs"
           >
-            Launch Tool Now
+            <span>Launch Tool Now</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

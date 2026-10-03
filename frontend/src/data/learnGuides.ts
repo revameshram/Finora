@@ -285,7 +285,7 @@ export const LEARN_GUIDES: LearnGuide[] = [
     category: 'Growth',
     readTimeMinutes: 6,
     icon: 'Target',
-    moduleTarget: 'goal-manager',
+    moduleTarget: 'goal-manager?from=learn&name=%E2%82%B950%20Lakh%20Goal&category=HOME_DOWNPAYMENT&target=5000000&inflation=6&return=10&start=200000',
     summary: 'Turn vague financial dreams into mathematically precise monthly SIP mandates tailored to specific time horizons.',
     highlights: [
       'Inflation-adjusted Future Value calculations: FV = PV · (1 + i)^n',
@@ -327,7 +327,7 @@ export const LEARN_GUIDES: LearnGuide[] = [
     category: 'Growth',
     readTimeMinutes: 8,
     icon: 'Flame',
-    moduleTarget: 'fire-planner',
+    moduleTarget: 'fire-planner?from=learn&age=30&targetAge=45&savings=2500000&expenses=1200000&return=12&postReturn=8&withdraw=4&inflation=6&mode=YEARS_TO_FIRE&monthly=60000',
     summary: 'Plan your path to Financial Independence & Early Retirement (FIRE) using safe withdrawal rates and personalized freedom milestones.',
     highlights: [
       'The 25x Annual Expense Rule and Trinity Study 4% Safe Withdrawal Rate (SWR)',

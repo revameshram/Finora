@@ -75,9 +75,9 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan }) => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveView('portfolio')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 ${
+            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
               activeView === 'portfolio'
-                ? 'bg-stone-900 text-white shadow-xs'
+                ? 'bg-[#B88728] text-white shadow-xs'
                 : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
             }`}
           >
@@ -87,9 +87,9 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan }) => {
 
           <button
             onClick={() => setActiveView('calculator')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 ${
+            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
               activeView === 'calculator'
-                ? 'bg-stone-900 text-white shadow-xs'
+                ? 'bg-[#B88728] text-white shadow-xs'
                 : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
             }`}
           >
@@ -109,7 +109,7 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan }) => {
             </button>
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-all"
+              className="px-4 py-2 text-xs font-semibold text-white bg-[#B88728] hover:bg-[#a67520] rounded-lg shadow-xs flex items-center gap-1.5 transition-all"
             >
               <Plus className="w-3.5 h-3.5" />
               Add Loan

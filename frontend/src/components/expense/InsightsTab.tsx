@@ -74,7 +74,7 @@ export const InsightsTab: React.FC<InsightsTabProps> = ({ insights, budgetMonth 
                 style={{ width: `${Math.min(100, Math.max(0, insights.savingsRate))}%` }}
               />
             </div>
-            <span className="text-[10px] text-[#78716C] block">Benchmark: $\ge 20\%$</span>
+            <span className="text-[10px] text-[#78716C] block">Benchmark: ≥ 20%</span>
           </div>
 
           <div className="p-3.5 bg-[#FBF8F3] rounded-lg border border-[#E7E5E4] space-y-1">
@@ -88,7 +88,7 @@ export const InsightsTab: React.FC<InsightsTabProps> = ({ insights, budgetMonth 
                 style={{ width: `${Math.min(100, Math.max(0, insights.expenseRatio))}%` }}
               />
             </div>
-            <span className="text-[10px] text-[#78716C] block">Target: $\le 60\%$</span>
+            <span className="text-[10px] text-[#78716C] block">Target: ≤ 60%</span>
           </div>
 
           <div className="p-3.5 bg-[#FBF8F3] rounded-lg border border-[#E7E5E4] space-y-1">

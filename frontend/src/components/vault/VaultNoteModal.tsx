@@ -218,7 +218,7 @@ export const VaultNoteModal: React.FC<VaultNoteModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || !label.trim() || !secretValue.trim()}
-              className="px-4 py-1.5 text-xs font-bold rounded-md bg-[#1C1917] text-white hover:bg-[#342D27] transition-colors shadow-xs disabled:opacity-50"
+              className="px-4 py-1.5 text-xs font-semibold rounded-md bg-[#B88728] text-white hover:bg-[#a67520] transition-colors shadow-xs disabled:opacity-50"
             >
               {isSubmitting ? 'Encrypting & Saving...' : editingNote ? 'Update Encrypted Note' : 'Save Encrypted Note'}
             </button>

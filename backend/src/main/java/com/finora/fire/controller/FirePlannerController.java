@@ -1,6 +1,6 @@
 package com.finora.fire.controller;
 
-import com.finora.common.auth.UserPrincipal;
+import com.finora.common.auth.security.UserPrincipal;
 import com.finora.fire.dto.FireSummaryDto;
 import com.finora.fire.dto.UpdateFirePlanRequest;
 import com.finora.fire.service.FirePlannerService;

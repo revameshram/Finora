@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, PlusCircle, MinusCircle, DollarSign, Calendar, FileText } from 'lucide-react';
+import { X, PlusCircle, MinusCircle } from 'lucide-react';
 
 interface SingleContributeModalProps {
   isOpen: boolean;
@@ -43,16 +43,16 @@ export const SingleContributeModal: React.FC<SingleContributeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-[#0E1B15] text-[#F3F6F3] border border-[#2D4A3E] rounded-xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between p-5 border-b border-[#1E382B] bg-[#12241C]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white text-[#1C1917] border border-[#E7E5E4] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between p-5 border-b border-[#E7E5E4] bg-[#FAFAF9]">
           <div>
-            <h2 className="text-base font-semibold text-[#F3F6F3]">Contribute to Goal</h2>
-            <p className="text-xs text-[#B88728] font-medium mt-0.5">{goalName}</p>
+            <h2 className="text-base font-bold font-serif text-[#1C1917]">Contribute to Goal</h2>
+            <p className="text-xs text-[#B88728] font-semibold mt-0.5">{goalName}</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-[#8DA698] hover:text-[#F3F6F3] hover:bg-[#1E382B] transition-colors"
+            className="p-1.5 rounded-lg text-[#78716C] hover:text-[#1C1917] hover:bg-stone-200 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -60,14 +60,14 @@ export const SingleContributeModal: React.FC<SingleContributeModalProps> = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Contribution vs Withdrawal Toggle */}
-          <div className="grid grid-cols-2 gap-2 p-1 bg-[#12241C] border border-[#2D4A3E] rounded-lg">
+          <div className="grid grid-cols-2 gap-2 p-1 bg-[#FAFAF9] border border-[#E7E5E4] rounded-xl">
             <button
               type="button"
               onClick={() => setType('CONTRIBUTION')}
-              className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-md transition-all ${
+              className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all ${
                 type === 'CONTRIBUTION'
-                  ? 'bg-[#1B6B44] text-[#F3F6F3] shadow-md'
-                  : 'text-[#8DA698] hover:text-[#F3F6F3]'
+                  ? 'bg-emerald-700 text-white shadow-xs'
+                  : 'text-[#78716C] hover:text-[#1C1917]'
               }`}
             >
               <PlusCircle className="w-4 h-4" />
@@ -76,10 +76,10 @@ export const SingleContributeModal: React.FC<SingleContributeModalProps> = ({
             <button
               type="button"
               onClick={() => setType('WITHDRAWAL')}
-              className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-md transition-all ${
+              className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all ${
                 type === 'WITHDRAWAL'
-                  ? 'bg-[#A83A2E] text-[#F3F6F3] shadow-md'
-                  : 'text-[#8DA698] hover:text-[#F3F6F3]'
+                  ? 'bg-rose-700 text-white shadow-xs'
+                  : 'text-[#78716C] hover:text-[#1C1917]'
               }`}
             >
               <MinusCircle className="w-4 h-4" />
@@ -88,11 +88,11 @@ export const SingleContributeModal: React.FC<SingleContributeModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-medium uppercase tracking-wider text-[#8DA698] mb-2">
+            <label className="block text-xs font-medium uppercase tracking-wider text-[#78716C] mb-2">
               Amount (₹)
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8DA698] text-sm">₹</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C] text-sm font-semibold">₹</span>
               <input
                 type="number"
                 min="1"
@@ -100,7 +100,7 @@ export const SingleContributeModal: React.FC<SingleContributeModalProps> = ({
                 placeholder="e.g. 10000"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full pl-8 pr-4 py-2.5 bg-[#12241C] border border-[#2D4A3E] rounded-lg text-[#F3F6F3] focus:outline-none focus:border-[#B88728] text-base font-semibold"
+                className="w-full pl-8 pr-4 py-2.5 bg-white border border-[#E7E5E4] rounded-lg text-[#1C1917] focus:outline-none focus:border-[#B88728] text-base font-semibold"
                 required
                 autoFocus
               />
@@ -108,20 +108,20 @@ export const SingleContributeModal: React.FC<SingleContributeModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-medium uppercase tracking-wider text-[#8DA698] mb-2">
+            <label className="block text-xs font-medium uppercase tracking-wider text-[#78716C] mb-2">
               Date
             </label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full px-4 py-2.5 bg-[#12241C] border border-[#2D4A3E] rounded-lg text-[#F3F6F3] focus:outline-none focus:border-[#B88728]"
+              className="w-full px-4 py-2.5 bg-white border border-[#E7E5E4] rounded-lg text-[#1C1917] focus:outline-none focus:border-[#B88728]"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium uppercase tracking-wider text-[#8DA698] mb-2">
+            <label className="block text-xs font-medium uppercase tracking-wider text-[#78716C] mb-2">
               Note (Optional)
             </label>
             <input
@@ -129,22 +129,22 @@ export const SingleContributeModal: React.FC<SingleContributeModalProps> = ({
               placeholder="e.g. Monthly SIP transfer / Bonus allocation"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full px-4 py-2.5 bg-[#12241C] border border-[#2D4A3E] rounded-lg text-[#F3F6F3] focus:outline-none focus:border-[#B88728] text-xs"
+              className="w-full px-4 py-2.5 bg-white border border-[#E7E5E4] rounded-lg text-[#1C1917] focus:outline-none focus:border-[#B88728] text-xs"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1E382B]">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E7E5E4]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-[#8DA698] hover:text-[#F3F6F3] transition-colors"
+              className="px-4 py-2 text-sm text-[#78716C] hover:text-[#1C1917] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className={`px-5 py-2 text-sm font-medium text-[#F3F6F3] rounded-lg transition-colors shadow-md ${
-                type === 'CONTRIBUTION' ? 'bg-[#1B6B44] hover:bg-[#238c59]' : 'bg-[#A83A2E] hover:bg-[#c74537]'
+              className={`px-5 py-2 text-sm font-semibold text-white rounded-lg transition-colors shadow-xs ${
+                type === 'CONTRIBUTION' ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-rose-700 hover:bg-rose-800'
               }`}
             >
               {type === 'CONTRIBUTION' ? 'Add Contribution' : 'Record Withdrawal'}

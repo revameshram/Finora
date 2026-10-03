@@ -15,4 +15,6 @@ public interface GoalInvestmentLinkRepository extends JpaRepository<GoalInvestme
     Optional<GoalInvestmentLink> findByPortfolioAssetIdAndLinkedProfileId(String portfolioAssetId, String linkedProfileId);
 
     void deleteByGoalId(String goalId);
+
+    void deleteByPortfolioAssetIdAndLinkedProfileId(String portfolioAssetId, String linkedProfileId);
 }

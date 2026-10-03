@@ -414,10 +414,10 @@ public class PortfolioController {
         return ResponseEntity.ok(assetService.getPortfolioSummary(resolveUserId(principal)));
     }
 
-    @PostMapping("/seed-sample-data")
+    @PostMapping({"/seed-sample-data", "/sample-seed"})
     @Operation(summary = "1-click seeder: a realistic starter portfolio (stocks, MF, gold, FD)")
-    public ResponseEntity<Void> seedSampleData(@AuthenticationPrincipal UserPrincipal principal) {
+    public ResponseEntity<PortfolioDashboardDto> seedSampleData(@AuthenticationPrincipal UserPrincipal principal) {
         assetService.seedSampleData(resolveUserId(principal));
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.status(HttpStatus.CREATED).body(analyticsService.getDashboard(resolveUserId(principal)));
     }
 }

@@ -92,7 +92,7 @@ export const IncomeSourcesTab: React.FC<IncomeSourcesTabProps> = ({
           <button
             type="button"
             onClick={openAddModal}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md bg-[#1C1917] hover:bg-[#342D27] text-white transition-colors shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-md bg-[#B88728] hover:bg-[#a67520] text-white transition-colors shadow-xs"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>Add Income</span>
@@ -223,7 +223,7 @@ export const IncomeSourcesTab: React.FC<IncomeSourcesTabProps> = ({
                 <button
                   type="submit"
                   disabled={isSubmitting || formAmountInr <= 0 || !formName.trim()}
-                  className="px-4 py-1.5 text-xs font-semibold rounded-md bg-[#1C1917] hover:bg-[#342D27] text-white disabled:opacity-50 transition-colors shadow-xs"
+                  className="px-4 py-1.5 text-xs font-semibold rounded-md bg-[#B88728] hover:bg-[#a67520] text-white disabled:opacity-50 transition-colors shadow-xs"
                 >
                   {isSubmitting ? 'Saving...' : editingIncome ? 'Update Income' : 'Add Income'}
                 </button>

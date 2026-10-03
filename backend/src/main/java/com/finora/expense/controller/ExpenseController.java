@@ -164,4 +164,23 @@ public class ExpenseController {
     public ResponseEntity<ExpenseInsightsDto> getInsights(@RequestParam(name = "month") String month) {
         return ResponseEntity.ok(expenseService.getInsights(getEffectiveProfileId(), month));
     }
+
+    // ==========================================
+    // Cross-Track Contracts (Goal Manager & FIRE Planner)
+    // ==========================================
+
+    @GetMapping("/summary")
+    public ResponseEntity<com.finora.expense.contract.dto.ExpenseSummaryDto> getExpenseSummary(
+            @RequestParam(name = "month", required = false) String month) {
+        String period = (month != null && !month.trim().isEmpty())
+                ? month
+                : java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM"));
+        return ResponseEntity.ok(expenseService.getExpenseSummaryContract(getEffectiveProfileId(), period));
+    }
+
+    @GetMapping("/goal-linked")
+    public ResponseEntity<List<com.finora.expense.contract.dto.GoalLinkedTransactionDto>> getGoalLinkedTransactions(
+            @RequestParam(name = "goalId", required = false) String goalId) {
+        return ResponseEntity.ok(expenseService.getGoalLinkedTransactionsContract(getEffectiveProfileId(), goalId));
+    }
 }

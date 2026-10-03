@@ -886,6 +886,14 @@ public class PortfolioAssetService {
     // Search / live-price preview / cross-module summary
     // ==================================================================
 
+    private final com.github.benmanes.caffeine.cache.Cache<String, List<SymbolSearchResultDto>> searchCache =
+            com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
+                    .expireAfterWrite(java.time.Duration.ofMinutes(5))
+                    .maximumSize(500)
+                    .build();
+
+    private final org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+
     private static final List<SymbolSearchResultDto> CURATED_SYMBOLS = List.of(
             SymbolSearchResultDto.builder().ticker("RELIANCE").companyName("Reliance Industries Ltd").market("NSE").build(),
             SymbolSearchResultDto.builder().ticker("TCS").companyName("Tata Consultancy Services Ltd").market("NSE").build(),
@@ -904,16 +912,105 @@ public class PortfolioAssetService {
     );
 
     public List<SymbolSearchResultDto> searchSymbols(String assetType, String query) {
-        if (query == null || query.trim().length() < 3) {
+        if (query == null || query.trim().length() < 2) {
             return List.of();
         }
+        String cacheKey = (assetType != null ? assetType : "ALL") + ":" + query.trim().toLowerCase();
+        List<SymbolSearchResultDto> cached = searchCache.getIfPresent(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+
+        List<SymbolSearchResultDto> results = new ArrayList<>();
+
+        // 1. If searching Mutual Funds, query live AMFI mfapi.in search endpoint
+        if ("MUTUAL_FUND".equalsIgnoreCase(assetType)) {
+            try {
+                String mfUrl = "https://api.mfapi.in/mf/search?q=" + java.net.URLEncoder.encode(query.trim(), java.nio.charset.StandardCharsets.UTF_8);
+                MfSearchItem[] mfItems = restTemplate.getForObject(mfUrl, MfSearchItem[].class);
+                if (mfItems != null) {
+                    for (MfSearchItem item : mfItems) {
+                        results.add(SymbolSearchResultDto.builder()
+                                .ticker(String.valueOf(item.getSchemeCode()))
+                                .companyName(item.getSchemeName())
+                                .market("AMFI")
+                                .build());
+                        if (results.size() >= 15) break;
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("Live MF search failed: {}", e.getMessage());
+            }
+        }
+
+        // 2. If searching Stocks / ETFs, try live Yahoo Finance search
+        if (!"MUTUAL_FUND".equalsIgnoreCase(assetType)) {
+            try {
+                String yahooSearchUrl = "https://query1.finance.yahoo.com/v1/finance/search?q=" +
+                        java.net.URLEncoder.encode(query.trim(), java.nio.charset.StandardCharsets.UTF_8) + "&quotesCount=10";
+                org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+                headers.set(org.springframework.http.HttpHeaders.USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Finora/1.0");
+                org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
+
+                org.springframework.http.ResponseEntity<YahooSearchResponse> resp = restTemplate.exchange(
+                        yahooSearchUrl, org.springframework.http.HttpMethod.GET, entity, YahooSearchResponse.class);
+
+                if (resp.getBody() != null && resp.getBody().getQuotes() != null) {
+                    for (YahooSearchQuote q : resp.getBody().getQuotes()) {
+                        String sym = q.getSymbol();
+                        if (sym == null) continue;
+                        String mkt = sym.endsWith(".NS") || sym.endsWith(".BO") ? "NSE" : "US";
+                        String cleanTicker = sym.endsWith(".NS") ? sym.replace(".NS", "") : (sym.endsWith(".BO") ? sym.replace(".BO", "") : sym);
+                        results.add(SymbolSearchResultDto.builder()
+                                .ticker(cleanTicker)
+                                .companyName(q.getShortname() != null ? q.getShortname() : (q.getLongname() != null ? q.getLongname() : cleanTicker))
+                                .market(mkt)
+                                .build());
+                        if (results.size() >= 15) break;
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("Live Yahoo search failed: {}", e.getMessage());
+            }
+        }
+
+        // 3. Supplement with curated fallback symbols
         String q = query.trim().toUpperCase();
         boolean wantsUsMarket = "STOCK_US".equalsIgnoreCase(assetType) || "ETF_US".equalsIgnoreCase(assetType);
-        return CURATED_SYMBOLS.stream()
-                .filter(s -> s.getTicker().contains(q) || s.getCompanyName().toUpperCase().contains(q))
-                .filter(s -> assetType == null || assetType.isBlank() || wantsUsMarket == "US".equals(s.getMarket()) || !wantsUsMarket)
-                .limit(10)
-                .collect(Collectors.toList());
+        for (SymbolSearchResultDto s : CURATED_SYMBOLS) {
+            if (s.getTicker().contains(q) || s.getCompanyName().toUpperCase().contains(q)) {
+                if (assetType == null || assetType.isBlank() || wantsUsMarket == "US".equals(s.getMarket()) || !wantsUsMarket) {
+                    if (results.stream().noneMatch(r -> r.getTicker().equalsIgnoreCase(s.getTicker()))) {
+                        results.add(s);
+                    }
+                }
+            }
+        }
+
+        searchCache.put(cacheKey, results);
+        return results;
+    }
+
+    @lombok.Data
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+    private static class MfSearchItem {
+        private Long schemeCode;
+        private String schemeName;
+    }
+
+    @lombok.Data
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+    private static class YahooSearchResponse {
+        private List<YahooSearchQuote> quotes;
+    }
+
+    @lombok.Data
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+    private static class YahooSearchQuote {
+        private String symbol;
+        private String shortname;
+        private String longname;
+        private String quoteType;
     }
 
     public LivePriceQuoteDto getLivePricePreview(AssetType assetType, Market market, String symbolOrCode) {
@@ -937,7 +1034,7 @@ public class PortfolioAssetService {
      * Unifies all 9 asset-type tables into one valuation list — used by both the summary endpoint
      * here and by PortfolioAnalyticsService for dashboard/growth/drawdown math.
      */
-    List<AssetValuation> collectAllValuations(String userId) {
+    public List<AssetValuation> collectAllValuations(String userId) {
         List<AssetValuation> all = new ArrayList<>();
 
         for (StockHolding h : stockHoldingRepository.findByUserIdOrderByCreatedAtDesc(userId)) {

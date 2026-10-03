@@ -530,7 +530,7 @@ export const ExpenseTracker: React.FC = () => {
           </div>
           <div>
             <span className="text-[10px] font-bold text-[#B45309] uppercase tracking-wider block">
-              Track B · Cash Flow Backbone
+              Cash Flow Backbone
             </span>
             <h2 className="text-base font-serif font-bold text-[#1C1917]">Expense Tracker</h2>
           </div>

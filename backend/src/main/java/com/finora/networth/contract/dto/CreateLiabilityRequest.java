@@ -55,4 +55,9 @@ public class CreateLiabilityRequest {
     @Schema(description = "Included in Net Worth total", example = "true")
     @Builder.Default
     private boolean isIncluded = true;
+
+    @JsonProperty("isLinked")
+    @Schema(description = "Whether the liability is linked to source", example = "true")
+    @Builder.Default
+    private boolean isLinked = true;
 }

@@ -19,6 +19,39 @@ public class CompoundGrowthEngine {
 
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
+    public static BigDecimal calculateCompoundGrowth(BigDecimal presentValue, double annualRate, double years) {
+        if (presentValue == null || presentValue.compareTo(BigDecimal.ZERO) == 0 || years <= 0) {
+            return presentValue != null ? presentValue : BigDecimal.ZERO;
+        }
+        double fv = presentValue.doubleValue() * Math.pow(1.0 + annualRate, years);
+        return BigDecimal.valueOf(fv).setScale(4, RoundingMode.HALF_UP);
+    }
+
+    public static BigDecimal calculateAnnuityFutureValue(BigDecimal annualContribution, double annualRate, double years) {
+        if (annualContribution == null || annualContribution.compareTo(BigDecimal.ZERO) == 0 || years <= 0) {
+            return BigDecimal.ZERO;
+        }
+        double pmt = annualContribution.doubleValue();
+        if (annualRate == 0) {
+            return BigDecimal.valueOf(pmt * years).setScale(4, RoundingMode.HALF_UP);
+        }
+        double fv = pmt * ((Math.pow(1.0 + annualRate, years) - 1.0) / annualRate);
+        return BigDecimal.valueOf(fv).setScale(4, RoundingMode.HALF_UP);
+    }
+
+    public static BigDecimal calculateRequiredMonthlySip(BigDecimal targetShortfall, double annualRate, int months) {
+        if (targetShortfall == null || targetShortfall.compareTo(BigDecimal.ZERO) <= 0 || months <= 0) {
+            return BigDecimal.ZERO;
+        }
+        double shortfall = targetShortfall.doubleValue();
+        double monthlyRate = annualRate / 12.0;
+        if (monthlyRate == 0) {
+            return BigDecimal.valueOf(shortfall / months).setScale(2, RoundingMode.HALF_UP);
+        }
+        double factor = (Math.pow(1.0 + monthlyRate, months) - 1.0) / monthlyRate;
+        return BigDecimal.valueOf(shortfall / factor).setScale(2, RoundingMode.HALF_UP);
+    }
+
     /**
      * Future Value of a Lump Sum: FV = PV * (1 + r)^n
      */

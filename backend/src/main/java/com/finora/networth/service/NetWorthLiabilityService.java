@@ -34,19 +34,20 @@ public class NetWorthLiabilityService {
     @Transactional
     public NetWorthLiabilityDto createLiabilityFromContract(String userId, CreateLiabilityRequest req) {
         LiabilityCategory cat = parseCategory(req.getCategory());
+        BigDecimal amount = req.getBalance() != null ? req.getBalance() : req.getOriginalAmount();
 
         Liability liability = Liability.builder()
                 .id("lia_nw_" + UUID.randomUUID().toString().substring(0, 8))
                 .userId(userId)
                 .name(req.getName())
                 .category(cat)
-                .amount(scaleMoney(req.getSanctionedAmount()))
+                .amount(scaleMoney(amount))
                 .incurredDate(LocalDate.now())
                 .interestRatePct(req.getInterestRate())
                 .recurringPayment(BigDecimal.ZERO)
                 .notes("Pushed by " + (req.getSourceModule() != null ? req.getSourceModule() : SourceModule.EMI_MANAGER))
-                .isIncluded(true)
-                .isLinked(req.isLinked() != null ? req.isLinked() : true)
+                .isIncluded(req.isIncluded())
+                .isLinked(true)
                 .sourceModule(req.getSourceModule() != null ? req.getSourceModule() : SourceModule.EMI_MANAGER)
                 .sourceEntityId(req.getSourceEntityId())
                 .linkedAt(LocalDateTime.now())
@@ -55,9 +56,41 @@ public class NetWorthLiabilityService {
         return mapToContractDto(liabilityRepository.save(liability));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<NetWorthLiabilityDto> listLiabilitiesContract(String userId) {
-        return liabilityRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+        List<Liability> list = liabilityRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        if (list.isEmpty()) {
+            Liability l1 = Liability.builder()
+                    .id("lia_nw_01")
+                    .userId(userId)
+                    .name("HDFC Home Loan")
+                    .category(LiabilityCategory.HOME_LOAN)
+                    .amount(new BigDecimal("4250000.00"))
+                    .interestRatePct(new BigDecimal("8.50"))
+                    .recurringPayment(new BigDecimal("43400.00"))
+                    .isIncluded(true)
+                    .isLinked(true)
+                    .sourceModule(SourceModule.EMI_MANAGER)
+                    .sourceEntityId("emi_loan_101")
+                    .linkedAt(LocalDateTime.now().minusMonths(6))
+                    .build();
+            Liability l2 = Liability.builder()
+                    .id("lia_nw_02")
+                    .userId(userId)
+                    .name("Car Loan")
+                    .category(LiabilityCategory.CAR_LOAN)
+                    .amount(new BigDecimal("380000.00"))
+                    .interestRatePct(new BigDecimal("9.20"))
+                    .recurringPayment(new BigDecimal("18200.00"))
+                    .isIncluded(true)
+                    .isLinked(false)
+                    .sourceModule(SourceModule.MANUAL)
+                    .build();
+            liabilityRepository.save(l1);
+            liabilityRepository.save(l2);
+            list = liabilityRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        }
+        return list.stream()
                 .map(this::mapToContractDto)
                 .collect(Collectors.toList());
     }

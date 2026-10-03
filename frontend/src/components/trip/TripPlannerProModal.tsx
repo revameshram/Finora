@@ -223,7 +223,7 @@ export const TripPlannerProModal: React.FC<TripPlannerProModalProps> = ({ isOpen
               type="button"
               onClick={handleGenerate}
               disabled={isGenerating || !destination.trim()}
-              className="w-full py-2.5 px-4 bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-2.5 px-4 bg-[#B88728] hover:bg-[#a67520] text-white text-xs font-semibold rounded-lg shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Wand2 className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
               {isGenerating ? 'Drafting Itinerary with AI...' : 'Generate Itinerary Plan'}

@@ -13,7 +13,7 @@ import java.math.BigDecimal;
  */
 @Getter
 @Builder
-class AssetValuation {
+public class AssetValuation {
     private String id;
     private AssetType assetType;
     private String name;
@@ -25,7 +25,7 @@ class AssetValuation {
     /** 0..1 fraction of currentValue that belongs to the "equity" bucket (1 for stocks/ETFs/equity-MF, partial for NPS, 0 otherwise). */
     private BigDecimal equityFraction;
 
-    BigDecimal gainLoss() {
+    public BigDecimal gainLoss() {
         return currentValue.subtract(investedAmount);
     }
 }

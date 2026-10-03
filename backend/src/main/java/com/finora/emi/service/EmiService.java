@@ -11,7 +11,7 @@ import com.finora.expense.model.ExpenseTransaction;
 import com.finora.expense.repository.ExpenseTransactionRepository;
 import com.finora.networth.contract.dto.CreateLiabilityRequest;
 import com.finora.networth.contract.dto.NetWorthLiabilityDto;
-import com.finora.networth.mock.controller.NetWorthContractMockController;
+import com.finora.networth.service.NetWorthLiabilityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +34,7 @@ public class EmiService {
     private final LoanPrepaymentRepository prepaymentRepository;
     private final LoanEmiLogRepository emiLogRepository;
     private final EmiCalculationEngine calculationEngine;
-    private final NetWorthContractMockController netWorthContractController;
+    private final NetWorthLiabilityService netWorthLiabilityService;
     private final ExpenseTransactionRepository expenseTransactionRepository;
 
     @Transactional
@@ -80,16 +80,16 @@ public class EmiService {
                         .sourceEntityId(loanId)
                         .build();
 
-                ResponseEntity<NetWorthLiabilityDto> res = netWorthContractController.createLiability(liabilityReq);
-                if (res.getBody() != null) {
-                    loan.setLinkedNetWorthLiabilityId(res.getBody().getId());
+                NetWorthLiabilityDto res = netWorthLiabilityService.createLiabilityFromContract(userId, liabilityReq);
+                if (res != null) {
+                    loan.setLinkedNetWorthLiabilityId(res.getId());
                     loan.setLinked(true);
                     loan.setSourceModule(SourceModule.EMI_MANAGER);
-                    loan.setSourceEntityId(res.getBody().getId());
+                    loan.setSourceEntityId(res.getId());
                     loan.setLinkedAt(LocalDateTime.now());
                 }
             } catch (Exception e) {
-                log.warn("Could not push loan liability to Net Worth Tracker mock contract: {}", e.getMessage());
+                log.warn("Could not push loan liability to Net Worth Tracker contract: {}", e.getMessage());
             }
         }
 

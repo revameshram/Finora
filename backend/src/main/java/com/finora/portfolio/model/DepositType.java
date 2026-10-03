@@ -2,5 +2,7 @@ package com.finora.portfolio.model;
 
 public enum DepositType {
     FD,
-    RD
+    RD,
+    FIXED_DEPOSIT,
+    RECURRING_DEPOSIT
 }

@@ -114,7 +114,7 @@ export const TasksAndNotesTab: React.FC<TasksAndNotesTabProps> = ({
             <button
               type="submit"
               disabled={isTaskSubmitting || !taskText.trim()}
-              className="px-3 py-1 text-xs font-bold rounded-md bg-[#1C1917] hover:bg-[#342D27] text-white disabled:opacity-50 transition-colors flex items-center gap-1 shadow-xs"
+              className="px-3.5 py-1 text-xs font-semibold rounded-md bg-[#B88728] hover:bg-[#a67520] text-white disabled:opacity-50 transition-colors flex items-center gap-1 shadow-xs"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>Add</span>
@@ -245,7 +245,7 @@ export const TasksAndNotesTab: React.FC<TasksAndNotesTabProps> = ({
             <button
               type="submit"
               disabled={isNoteSubmitting || !noteContent.trim()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md bg-[#1C1917] hover:bg-[#342D27] text-white disabled:opacity-50 transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-md bg-[#B88728] hover:bg-[#a67520] text-white disabled:opacity-50 transition-colors shadow-xs"
             >
               <Send className="h-3.5 w-3.5" />
               <span>Append Note</span>

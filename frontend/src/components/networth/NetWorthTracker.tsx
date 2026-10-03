@@ -8,9 +8,8 @@ import {
   NetWorthInsightsDto,
   CreateAssetRequest,
   CreateLiabilityRequest,
-  AssetCategory,
-  LiabilityCategory,
 } from '../../types/networth';
+import { SourceModule } from '../../types';
 import { Money, InsightsCard, LinkedBadge, IncludeToggle, EmptyState, OnboardingDrawer } from '../shared';
 import { useToast } from '../shared/ToastContext';
 import { AddAssetModal } from './AddAssetModal';
@@ -25,17 +24,19 @@ import {
   Lock,
   Search,
   Sparkles,
-  ArrowUpRight,
   Activity,
   Calculator,
-  Compass,
-  Building2,
   CheckCircle2,
   Info,
   Zap,
+  ArrowRight,
 } from 'lucide-react';
 
-export const NetWorthTracker: React.FC = () => {
+interface NetWorthTrackerProps {
+  onNavigateToModule?: (moduleId: string) => void;
+}
+
+export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({ onNavigateToModule }) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'assets' | 'liabilities' | 'summary'>('assets');
 
@@ -212,9 +213,9 @@ export const NetWorthTracker: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-[#B45309] uppercase tracking-wider">Track A · Wealth & Growth</span>
+                <span className="text-[10px] font-bold text-[#B45309] uppercase tracking-wider">Wealth & Growth</span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-[#FEF3C7] text-[#B45309] border-[#B45309]/30">
-                  Feature-Complete
+                  Consolidated
                 </span>
               </div>
               <h1 className="text-xl font-serif font-bold text-[#1C1917] mt-0.5">Net Worth Tracker & Growth Engine</h1>
@@ -238,7 +239,7 @@ export const NetWorthTracker: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsAddAssetOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-[#1C1917] hover:bg-[#342D27] rounded-lg transition-colors shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#B88728] hover:bg-[#a67520] rounded-lg transition-colors shadow-xs"
           >
             <Plus className="h-3.5 w-3.5 text-[#FEF3C7]" />
             <span>Add Asset</span>
@@ -419,8 +420,8 @@ export const NetWorthTracker: React.FC = () => {
           {/* Assets Table */}
           {filteredAssets.length === 0 ? (
             <EmptyState
-              title="No assets found"
-              description="Add manual bank accounts, real estate, gold, or seed sample assets to view your holdings."
+              headline="No assets found"
+              subtext="Add manual bank accounts, real estate, gold, or seed sample assets to view your holdings."
               icon={TrendingUp}
               action={{
                 label: 'Add First Asset',
@@ -457,7 +458,7 @@ export const NetWorthTracker: React.FC = () => {
                       <td className="py-3 px-4">
                         <LinkedBadge
                           isLinked={asset.isLinked}
-                          sourceModule={asset.sourceModule}
+                          sourceModule={asset.sourceModule as SourceModule}
                           onDelink={() => handleDelinkAsset(asset.id)}
                         />
                       </td>
@@ -536,8 +537,8 @@ export const NetWorthTracker: React.FC = () => {
           {/* Liabilities Table */}
           {filteredLiabilities.length === 0 ? (
             <EmptyState
-              title="No liabilities recorded"
-              description="Add loan obligations, mortgages, or credit card debt to calculate your debt ratio accurately."
+              headline="No liabilities recorded"
+              subtext="Add loan obligations, mortgages, or credit card debt to calculate your debt ratio accurately."
               icon={ShieldAlert}
               action={{
                 label: 'Add First Liability',
@@ -575,7 +576,7 @@ export const NetWorthTracker: React.FC = () => {
                       <td className="py-3 px-4">
                         <LinkedBadge
                           isLinked={liab.isLinked}
-                          sourceModule={liab.sourceModule}
+                          sourceModule={liab.sourceModule as SourceModule}
                           onDelink={() => handleDelinkLiability(liab.id)}
                         />
                       </td>
@@ -632,14 +633,14 @@ export const NetWorthTracker: React.FC = () => {
                   <h2 className="text-base font-bold text-[#1C1917]">Shared Growth Engine Library (`CompoundGrowthEngine`)</h2>
                 </div>
                 <p className="text-xs text-[#78716C] mt-0.5">
-                  Multi-scenario compound growth ($FV = PV(1+r)^n$), SIP annuity math ($FV_{\text{annuity}}$), and inflation discounting. Exposes public interface consumed by Goal Manager and FIRE Planner.
+                  Multi-scenario compound growth (FV = PV(1+r)^n), SIP annuity math, and inflation discounting. Exposes public interface consumed by Goal Manager and FIRE Planner.
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={handleRecalculateProjections}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#1C1917] hover:bg-[#342D27] rounded-lg shadow-xs transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#B88728] hover:bg-[#a67520] rounded-lg shadow-xs transition-colors"
               >
                 <Calculator className="h-3.5 w-3.5 text-[#FEF3C7]" />
                 <span>Recalculate Scenarios</span>
@@ -647,11 +648,23 @@ export const NetWorthTracker: React.FC = () => {
             </div>
 
             {/* Portfolio Flat Growth Nuance Banner */}
-            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
-              <Info className="h-4 w-4 text-amber-700 flex-shrink-0 mt-0.5" />
-              <div>
-                <strong>Portfolio-Linked Flat Growth Nuance:</strong> Linked investments (<Money amount={projections?.portfolioLinkedAssetsHeldFlat || 0} />) are included in current Net Worth balance but held flat (0% CAGR) in projections to prevent double-counting against Portfolio Tracker forecasts. Manual assets (<Money amount={projections?.manualAssetsTotal || 0} />) + monthly savings grow at scenario rates.
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-2.5">
+                <Info className="h-4 w-4 text-amber-700 flex-shrink-0 mt-0.5" />
+                <div>
+                  <strong>Portfolio-Linked Flat Growth Nuance:</strong> Linked investments (<Money amount={projections?.portfolioLinkedAssetsHeldFlat || 0} />) are included in current Net Worth balance but held flat (0% CAGR) in projections to prevent double-counting against Portfolio Tracker forecasts. Manual assets (<Money amount={projections?.manualAssetsTotal || 0} />) + monthly savings grow at scenario rates.
+                </div>
               </div>
+              {onNavigateToModule && (
+                <button
+                  type="button"
+                  onClick={() => onNavigateToModule('portfolio-tracker')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-950 bg-amber-200/80 hover:bg-amber-300 border border-amber-400/60 rounded-lg transition-colors flex-shrink-0 self-start sm:self-auto shadow-xs"
+                >
+                  <span>Open Portfolio</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
 
             {/* Sandbox Inputs Grid */}
@@ -934,7 +947,30 @@ export const NetWorthTracker: React.FC = () => {
 
             {/* Recommendation Feed Cards */}
             <div className="space-y-3 pt-2">
-              <h4 className="text-xs font-bold text-[#1C1917] uppercase tracking-wider">Contextual Recommendations Feed</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-[#1C1917] uppercase tracking-wider">Contextual Recommendations Feed</h4>
+                {onNavigateToModule && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onNavigateToModule('emi-manager')}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 hover:underline"
+                    >
+                      <span>Prepay Loans in EMI Manager</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </button>
+                    <span className="text-stone-300">·</span>
+                    <button
+                      type="button"
+                      onClick={() => onNavigateToModule('portfolio-tracker')}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-[#B45309] hover:underline"
+                    >
+                      <span>Open Portfolio</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {insights?.recommendations.map((rec, i) => (
                   <InsightsCard
@@ -943,7 +979,29 @@ export const NetWorthTracker: React.FC = () => {
                     sourceModule="NET_WORTH"
                     title={rec.title}
                     description={rec.description}
-                    action={rec.actionLabel ? { label: rec.actionLabel, onClick: () => toast.info(`Opening ${rec.actionModule}`) } : undefined}
+                    action={
+                      rec.actionLabel
+                        ? {
+                            label: rec.actionLabel,
+                            onClick: () => {
+                              if (rec.actionModule === 'EMI_MANAGER') {
+                                if (onNavigateToModule) onNavigateToModule('emi-manager');
+                                else toast.info('Opening EMI Manager');
+                              } else if (rec.actionModule === 'PORTFOLIO') {
+                                if (onNavigateToModule) onNavigateToModule('portfolio-tracker');
+                                else toast.info('Opening Portfolio Tracker');
+                              } else if (rec.actionModule === 'EXPENSE_TRACKER') {
+                                if (onNavigateToModule) onNavigateToModule('expense-tracker');
+                                else toast.info('Opening Expense Tracker');
+                              } else if (rec.actionModule && onNavigateToModule) {
+                                onNavigateToModule(rec.actionModule.toLowerCase().replace('_', '-'));
+                              } else {
+                                toast.info(`Opening ${rec.actionModule || 'module'}`);
+                              }
+                            },
+                          }
+                        : undefined
+                    }
                   />
                 ))}
               </div>
@@ -982,7 +1040,7 @@ export const NetWorthTracker: React.FC = () => {
           },
           {
             stepNumber: 2,
-            title: 'Cross-Track EMI Manager Liability Sync',
+            title: 'Integrated EMI Manager Liability Sync',
             description: 'Loan liabilities created in EMI Manager automatically push records into your Net Worth liability ledger.',
           },
           {

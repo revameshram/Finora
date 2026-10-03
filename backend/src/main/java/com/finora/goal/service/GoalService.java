@@ -4,7 +4,6 @@ import com.finora.common.growth.CompoundGrowthEngine;
 import com.finora.goal.dto.*;
 import com.finora.goal.model.*;
 import com.finora.goal.repository.*;
-import com.finora.portfolio.repository.PortfolioAssetRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,10 +25,18 @@ public class GoalService {
     private final GoalRepository goalRepository;
     private final GoalContributionRepository contributionRepository;
     private final GoalInvestmentLinkRepository investmentLinkRepository;
-    private final GoalTagRepository tagRepository;
     private final GoalMilestoneRepository milestoneRepository;
     private final GoalManagerSettingsRepository settingsRepository;
-    private final PortfolioAssetRepository portfolioAssetRepository;
+    private final com.finora.portfolio.service.PortfolioAssetService portfolioAssetService;
+    private final com.finora.expense.service.ExpenseService expenseService;
+
+    @Transactional(readOnly = true)
+    public List<com.finora.expense.contract.dto.GoalLinkedTransactionDto> getGoalLinkedTransactions(String userId, String goalId) {
+        if (expenseService != null) {
+            return expenseService.getGoalLinkedTransactionsContract(userId, goalId);
+        }
+        return List.of();
+    }
 
     @Transactional(readOnly = true)
     public GoalDashboardSummaryDto getDashboardSummary(String userId) {
@@ -44,7 +51,7 @@ public class GoalService {
         int behind = 0;
 
         List<GoalDto> goalDtos = new ArrayList<>();
-        Map<String, BigDecimal> categoryAllocations = new EnumMap<>(GoalCategory.class);
+        Map<String, BigDecimal> categoryAllocations = new HashMap<>();
 
         Goal nextDueGoal = null;
         long minDaysRemaining = Long.MAX_VALUE;
@@ -205,9 +212,10 @@ public class GoalService {
         // Seed default milestones
         createDefaultMilestones(goal.getId());
 
-        // Process linked portfolio investments
+        // Process linked portfolio investments (enforcing 1 investment -> 1 goal constraint)
         if (request.getLinkedPortfolioAssetIds() != null && !request.getLinkedPortfolioAssetIds().isEmpty()) {
             for (String assetId : request.getLinkedPortfolioAssetIds()) {
+                investmentLinkRepository.deleteByPortfolioAssetIdAndLinkedProfileId(assetId, userId);
                 GoalInvestmentLink link = GoalInvestmentLink.builder()
                     .goalId(goal.getId())
                     .portfolioAssetId(assetId)
@@ -243,6 +251,7 @@ public class GoalService {
         if (request.getLinkedPortfolioAssetIds() != null) {
             investmentLinkRepository.deleteByGoalId(goalId);
             for (String assetId : request.getLinkedPortfolioAssetIds()) {
+                investmentLinkRepository.deleteByPortfolioAssetIdAndLinkedProfileId(assetId, userId);
                 GoalInvestmentLink link = GoalInvestmentLink.builder()
                     .goalId(goalId)
                     .portfolioAssetId(assetId)
@@ -533,19 +542,26 @@ public class GoalService {
             }
         }
 
-        // Sum linked portfolio holdings
+        // Sum linked portfolio holdings with live valuations
         List<GoalInvestmentLink> links = investmentLinkRepository.findByGoalId(goal.getId());
         BigDecimal linkedPortfolioSum = BigDecimal.ZERO;
 
-        for (GoalInvestmentLink link : links) {
+        if (!links.isEmpty() && portfolioAssetService != null) {
             try {
-                var assetOpt = portfolioAssetRepository.findById(link.getPortfolioAssetId());
-                if (assetOpt.isPresent()) {
-                    // Get current value from asset
-                    linkedPortfolioSum = linkedPortfolioSum.add(new BigDecimal("50000.0000")); // fallback default if getter reflection varies
+                var valuations = portfolioAssetService.collectAllValuations(goal.getUserId());
+                Map<String, BigDecimal> valMap = valuations.stream()
+                        .collect(Collectors.toMap(com.finora.portfolio.service.AssetValuation::getId,
+                                com.finora.portfolio.service.AssetValuation::getCurrentValue,
+                                (a, b) -> a));
+
+                for (GoalInvestmentLink link : links) {
+                    if (link.getPortfolioAssetId() != null) {
+                        BigDecimal assetVal = valMap.getOrDefault(link.getPortfolioAssetId(), BigDecimal.ZERO);
+                        linkedPortfolioSum = linkedPortfolioSum.add(assetVal);
+                    }
                 }
             } catch (Exception e) {
-                log.warn("Could not calculate portfolio asset value for link: {}", link.getPortfolioAssetId());
+                log.warn("Could not calculate live portfolio asset value for goal {}: {}", goal.getId(), e.getMessage());
             }
         }
 
@@ -641,8 +657,8 @@ public class GoalService {
             .requiredMonthlyContribution(requiredMonthly)
             .status(status)
             .notes(goal.getNotes())
-            .isIncluded(goal.getIsIncluded())
-            .isLinked(goal.getIsLinked())
+            .isIncluded(goal.isIncluded())
+            .isLinked(goal.isLinked())
             .sourceModule(goal.getSourceModule() != null ? goal.getSourceModule().name() : "MANUAL")
             .sourceEntityId(goal.getSourceEntityId())
             .createdAt(goal.getCreatedAt())

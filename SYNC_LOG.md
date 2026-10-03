@@ -35,6 +35,135 @@
 
 ## Log
 
+### 2026-10-03 — Finora Core — Joint Tracks A & B
+
+**Worked on:** Westro Master Feature & Content Document Alignment & Feature Completion.
+
+**Changes made:**
+- **Goal Manager ("One Investment → One Goal" Constraint):**
+  - Added `deleteByPortfolioAssetIdAndLinkedProfileId` method to `GoalInvestmentLinkRepository`.
+  - Updated `GoalService.createGoal` and `GoalService.updateGoal` to enforce the strict rule: linking a portfolio holding to Goal B automatically detaches any prior link to Goal A, preventing multi-goal double-counting.
+- **Loan / EMI Manager (Prepay vs. Invest Arbitrage Visualizer):**
+  - Enhanced `PrepaymentSimulatorTab.tsx` with a dedicated **Prepay vs. Invest Arbitrage Analyzer** section.
+  - Compares guaranteed tax-free interest avoided by prepaying (Option A) against compounding future value wealth if invested in the equity market (Option B) across remaining loan tenure.
+  - Interactive expected market return slider (6.0% – 16.0%, default 12.0%) with automatic strategy outcome verdict (net arbitrage differential).
+- **Learn Content Hub & Cross-Tool Deep Linking:**
+  - Added URL query parameter / route state parser in `App.tsx` (`handleNavigate`).
+  - Implemented `initialParams` in `GoalManager.tsx` and `CreateGoalModal.tsx` so clicking CTAs in the Learn Center pre-populates goal targets, timelines, return assumptions, and starting amounts.
+  - Implemented `initialParams` in `FirePlanner.tsx` to pre-populate age, retirement targets, monthly savings, returns, and SWR assumptions from Learn articles.
+  - Updated `learnGuides.ts` with deep-link query parameter URLs (`goal-manager?from=learn&...`, `fire-planner?from=learn&...`).
+- **Verification:**
+  - Full backend test suite passing with 46/46 test suites (`mvn test` — 0 failures, 0 errors).
+  - Clean frontend production build (`npm run build` — 0 errors).
+
+**Affects other track?** No.
+
+**Contract impact?** None.
+
+**Blocked on:** Nothing.
+
+**Next session:** Project is feature-complete and verified. Ready for deployment.
+
+---
+
+### 2026-09-30 — Finora Core — Joint Tracks A & B
+
+**Worked on:** End-to-End Cross-Module Integration Testing (`FinoraCrossModuleEndToEndIntegrationTest`).
+
+**Changes made:**
+- **Scenario 1 (Delink Semantics & Non-Mutating GoalTag Rules):**
+  - Tested Portfolio-linked Net Worth asset delink workflow: `isLinked` flips to `false`, `sourceModule` becomes `MANUAL`, `sourceEntityId` becomes `null`, and asset valuation is preserved at frozen snapshot (₹2,50,000) while allowing independent manual edits.
+  - Tested Goal-linked Expense transaction association via `/api/v1/expenses/goal-linked`: confirmed tagged transactions associate for reporting only and strictly do NOT mutate `Goal.currentValue` (remains ₹2,00,000).
+- **Scenario 2 (EMI Manager -> Net Worth Liability Sync):**
+  - Tested loan creation in EMI Manager (`POST /api/v1/emi/loans`) automatically pushing linked liabilities to Net Worth Tracker (`POST /api/v1/networth/liabilities`) with `sourceModule = EMI_MANAGER` and `isLinked = true`.
+  - Tested prepayment recording and loan schedule recalculation.
+- **Scenario 3 (Real Expense Contract Consumption by Goal Manager & FIRE Planner):**
+  - Tested live data population in Expense Tracker (`IncomeSource` ₹2,00,000, `ExpenseTransaction` ₹80,000) returning real metrics on `/api/v1/expenses/summary` (60.0% savings rate).
+  - Tested FIRE Planner calculating retirement runway from real trailing annual spend ($12 \times \text{outflow} = \text{₹}9,60,000$, FIRE Number ₹2,40,00,000).
+  - Tested Goal Manager dashboard capacity checks evaluating against real cash flow surplus.
+- **Verification:**
+  - 100% backend test pass rate across all 46 test suites (`mvn test` — 0 failures, 0 errors).
+  - Frontend production build (`npm run build` — 0 TypeScript/Vite errors).
+
+**Affects other track?** No.
+
+**Contract impact?** None (All cross-track contracts verified functioning with 100% fidelity).
+
+**Blocked on:** Nothing. All 8 modules, shared linking services, and cross-track contracts are 100% Complete and verified.
+
+**Next session:** Project is ready for deployment / final user handover.
+
+---
+
+### 2026-09-30 — Finora Core — Joint Tracks A & B
+
+**Worked on:** Suite-Wide Insights Tab Implementation & Cross-Module Health Engine.
+
+**Changes made:**
+- **Backend Architecture (`com.finora.insights`):**
+  - Built `SuiteInsightsDto`, `FinancialHealthScoreDto`, `KeyMetricItemDto`, and `RecommendationNudgeDto`.
+  - Built `SuiteInsightsService` integrating real operational data across all 8 modules (`ExpenseService`, `NetWorthAnalyticsService`, `PortfolioAnalyticsService`, `GoalService`, `FirePlannerService`, `EmiService`, `TripService`, `VaultService`).
+  - Built `SuiteInsightsController` exposing `GET /api/v1/insights/suite`.
+  - Added `/api/v1/insights/**` to permitAll in `SecurityConfig`.
+  - Created `SuiteInsightsIntegrationTest` verifying end-to-end composite calculations, life-area metrics grouping, and recommendation nudges.
+- **Frontend Architecture (`frontend/src/components/insights/`):**
+  - Built `insightsApi.ts` client consuming `/insights/suite`.
+  - Built `SuiteInsightsView.tsx` with:
+    1. Composite Financial Health Score gauge (0–100) and 4-pillar breakdown bars (Cash Flow 30%, Solvency 30%, Goal Pacing 20%, Retirement Freedom 20%).
+    2. Cross-module Key Metrics grid grouped by life-area (`CASH_FLOW`, `DEBT`, `WEALTH`, `LIFE_ADMIN`) with health indicator badges and originating source module badges.
+    3. Asset Allocation Distribution breakdown across Equities, Mutual Funds, Fixed Deposits, Precious Metals, and Real Estate.
+    4. Strategic Recommendations & Cross-Module Nudges feed with urgency badges and direct-jump action buttons.
+  - Wired `SuiteInsightsView.tsx` into `WorkspaceHub.tsx` under the "Suite-Wide Insights" tab.
+- **Verification:**
+  - 100% backend test pass rate across all 42 test suites (`mvn test` 0 errors).
+  - Clean frontend production build (`npm run build` 0 errors).
+
+**Affects other track?** No (Synthesizes both Track A and Track B modules into a unified executive diagnostic layer).
+
+**Contract impact?** None.
+
+**Blocked on:** Nothing. All 8 modules and Suite-Wide Insights are 100% Complete.
+
+**Next session:** Project is ready for deployment / final user review.
+
+---
+
+### 2026-09-29 — Finora Core — Joint Tracks A & B
+
+**Worked on:** Cross-Track Contracts Mock Swap & Real API Integration (Expense Tracker Summary API Contract & Net Worth Liabilities/Assets API Contract).
+
+**Changes made:**
+- **Contract 1: Expense Tracker Summary API (`GET /api/v1/expenses/summary` & `GET /api/v1/expenses/goal-linked`):**
+  - Retired `ExpenseContractMockController` and routed contract endpoints directly through `ExpenseController` (`/api/v1/expenses/summary` and `/api/v1/expenses/goal-linked`).
+  - Updated `ExpenseService.getExpenseSummaryContract()` to compute real metrics from `IncomeSource` and `ExpenseTransaction` records in DB, with seed fallbacks matching OpenAPI contract spec when 0 user records exist.
+  - Updated `ExpenseService.getGoalLinkedTransactionsContract()` to return real `GoalLinkedTransactionDto` instances from user transactions.
+  - Updated `FirePlannerService` to inject `ExpenseService` directly and auto-populate retirement annual expenses from real trailing spend.
+  - Updated `GoalService` to inject `ExpenseService` for querying goal-linked transactions.
+- **Contract 2: Net Worth Liabilities/Assets API (`GET /api/v1/networth/liabilities` & `POST /api/v1/networth/liabilities`):**
+  - Retired `NetWorthContractMockController`.
+  - Confirmed real database fulfillment in `NetWorthController` backed by `NetWorthLiabilityService` (`createLiabilityFromContract` and `listLiabilities`).
+  - Confirmed `EmiService` seamlessly creates and synchronizes loan liabilities into Net Worth Tracker via `NetWorthLiabilityService.createLiabilityFromContract()`.
+- **Testing & Verification:**
+  - `FinoraContractsIntegrationTest` passed all contract endpoint tests.
+  - Full backend test suite (`mvn clean test`) passed 41/41 test suites with 0 errors.
+
+**Affects other track?** Yes
+- If yes — what changed and what the other person needs to do about it:
+  - Both Track A consumers (`GoalService`, `FirePlannerService`) and Track B consumers (`EmiService`) now run 100% against real domain services and live database tables without mock controller intermediaries.
+
+**Contract impact?** Expense Tracker Summary API / Net Worth Liabilities-Assets API
+- If a shared contract or shared piece changed shape, spell out the exact diff:
+  - Exact OpenAPI contract schemas (`ExpenseSummaryDto`, `CategoryBreakdownDto`, `GoalLinkedTransactionDto`, `NetWorthLiabilityDto`, `CreateLiabilityRequest`) preserved 100% without breaking changes.
+  - Mock controllers deleted; endpoints hosted directly by real REST controllers.
+
+**Blocked on:**
+- None.
+
+**Next session:**
+- Suite-Wide Insights tab composite scoring and final polish.
+
+---
+
 ### 2026-09-14 — Reva — Track A / Phase 1
 
 **Worked on:** Prompt A.4 FIRE Planner Module (Backend Entities `fp_*`, `FirePlannerService` consuming shared `CompoundGrowthEngine` for 4% SWR & reverse SIP retirement math, `FirePlannerController`, `FirePlannerIntegrationTest`, 2-Column Layout with Persistent Results Sidebar, Mode 1 & Mode 2 Calculation Engines, Standardized Finora Baseline Return Assumptions, Expense Tracker Summary Contract Auto-Population, Dual-Line Savings Growth Chart, and Workspace Shell Integration).

@@ -212,7 +212,7 @@ export const VaultUnlockGate: React.FC<VaultUnlockGateProps> = ({
           <button
             type="submit"
             disabled={isUnlocking || !password || !captchaAnswer}
-            className="w-full py-2.5 px-4 text-xs font-bold text-white bg-[#1C1917] hover:bg-[#342D27] rounded-lg transition-colors shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+            className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-[#B88728] hover:bg-[#a67520] rounded-lg transition-colors shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
           >
             <span>{isUnlocking ? 'Verifying & Decrypting...' : 'Unlock Vault'}</span>
             <ArrowRight className="h-3.5 w-3.5" />
@@ -319,7 +319,7 @@ export const VaultUnlockGate: React.FC<VaultUnlockGateProps> = ({
                 <button
                   type="submit"
                   disabled={isRecovering}
-                  className="px-4 py-1.5 text-xs font-bold rounded-md bg-[#1C1917] text-white hover:bg-[#342D27]"
+                  className="px-4 py-1.5 text-xs font-semibold rounded-md bg-[#B88728] text-white hover:bg-[#a67520] transition-colors shadow-xs"
                 >
                   {isRecovering ? 'Recovering...' : 'Redeem & Reset'}
                 </button>

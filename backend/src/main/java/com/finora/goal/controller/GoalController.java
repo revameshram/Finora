@@ -1,6 +1,6 @@
 package com.finora.goal.controller;
 
-import com.finora.common.auth.UserPrincipal;
+import com.finora.common.auth.security.UserPrincipal;
 import com.finora.goal.dto.*;
 import com.finora.goal.model.GoalStatus;
 import com.finora.goal.service.GoalService;

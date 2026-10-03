@@ -115,9 +115,9 @@ export const LearnCenter: React.FC<LearnCenterProps> = ({
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
                   selectedCategory === cat
-                    ? 'bg-stone-900 text-white shadow-xs'
+                    ? 'bg-[#B88728] text-white shadow-xs'
                     : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                 }`}
               >

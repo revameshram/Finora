@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AssetCategory, CreateAssetRequest } from '../../types/networth';
-import { X, Plus, DollarSign } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 
 interface AddAssetModalProps {
   isOpen: boolean;
@@ -163,7 +163,7 @@ export const AddAssetModal: React.FC<AddAssetModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 text-xs font-bold text-white bg-[#1C1917] hover:bg-[#342D27] rounded-lg shadow-xs transition-colors"
+              className="px-4 py-2 text-xs font-semibold text-white bg-[#B88728] hover:bg-[#a67520] rounded-lg shadow-xs transition-colors"
             >
               {isSubmitting ? 'Saving...' : 'Add Asset'}
             </button>

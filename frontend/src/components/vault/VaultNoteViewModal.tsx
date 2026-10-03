@@ -233,7 +233,7 @@ export const VaultNoteViewModal: React.FC<VaultNoteViewModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-1.5 text-xs font-bold rounded-md bg-[#1C1917] text-white hover:bg-[#342D27] transition-colors shadow-xs"
+              className="px-4 py-1.5 text-xs font-semibold rounded-md bg-[#B88728] text-white hover:bg-[#a67520] transition-colors shadow-xs"
             >
               Done & Close
             </button>

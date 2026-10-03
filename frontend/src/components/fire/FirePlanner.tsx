@@ -2,21 +2,22 @@ import React, { useState, useEffect } from 'react';
 import {
   Flame,
   Calendar,
-  Layers,
   Sparkles,
-  TrendingUp,
   HelpCircle,
   BarChart2,
-  DollarSign,
-  Clock,
-  ShieldCheck,
   RefreshCw,
 } from 'lucide-react';
 
-import { Money, InsightsCard, OnboardingDrawer } from '../shared';
+import apiClient from '../../api/client';
+import { Money } from '../shared';
 import { FireSummaryTab } from './FireSummaryTab';
 
-export const FirePlanner: React.FC = () => {
+interface FirePlannerProps {
+  onNavigateToModule?: (moduleId: string) => void;
+  initialParams?: Record<string, string>;
+}
+
+export const FirePlanner: React.FC<FirePlannerProps> = ({ onNavigateToModule, initialParams }) => {
   const [activeTab, setActiveTab] = useState<'INPUTS' | 'SUMMARY'>('INPUTS');
   const [activeMode, setActiveMode] = useState<'YEARS_TO_FIRE' | 'REQUIRED_SAVINGS'>('YEARS_TO_FIRE');
 
@@ -41,14 +42,33 @@ export const FirePlanner: React.FC = () => {
     fetchSummary();
   }, []);
 
+  useEffect(() => {
+    if (initialParams && Object.keys(initialParams).length > 0) {
+      if (initialParams.age) setCurrentAge(Number(initialParams.age));
+      if (initialParams.targetAge) setTargetRetirementAge(Number(initialParams.targetAge));
+      if (initialParams.savings) {
+        setManualCurrentSavings(Number(initialParams.savings));
+        setCurrentSavingsSource('MANUAL');
+      }
+      if (initialParams.expenses) setAnnualExpensesInRetirement(Number(initialParams.expenses));
+      if (initialParams.return) setExpectedAnnualReturnPct(Number(initialParams.return));
+      if (initialParams.postReturn) setPostRetirementReturnPct(Number(initialParams.postReturn));
+      if (initialParams.withdraw) setSafeWithdrawalRatePct(Number(initialParams.withdraw));
+      if (initialParams.inflation) setExpectedAnnualInflationPct(Number(initialParams.inflation));
+      if (initialParams.monthly) setMonthlySavings(Number(initialParams.monthly));
+      if (initialParams.mode) {
+        setActiveMode(initialParams.mode.toUpperCase() === 'REQUIRED_SAVINGS' ? 'REQUIRED_SAVINGS' : 'YEARS_TO_FIRE');
+      }
+    }
+  }, [initialParams]);
+
   const fetchSummary = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/v1/fire/plan');
-      if (res.ok) {
-        const data = await res.json();
-        setSummary(data);
-        populateFormFromPlan(data.plan);
+      const res = await apiClient.get('/fire/plan');
+      if (res.data) {
+        setSummary(res.data);
+        populateFormFromPlan(res.data.plan);
       } else {
         seedDefaultState();
       }
@@ -139,14 +159,9 @@ export const FirePlanner: React.FC = () => {
     };
 
     try {
-      const res = await fetch('/api/v1/fire/plan', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setSummary(data);
+      const res = await apiClient.put('/fire/plan', payload);
+      if (res.data) {
+        setSummary(res.data);
       }
     } catch (e) {
       console.error(e);
@@ -155,7 +170,7 @@ export const FirePlanner: React.FC = () => {
 
   const handleSeedSampleData = async () => {
     try {
-      await fetch('/api/v1/fire/seed', { method: 'POST' });
+      await apiClient.post('/fire/seed');
       fetchSummary();
     } catch (e) {
       fetchSummary();
@@ -170,20 +185,20 @@ export const FirePlanner: React.FC = () => {
     );
   }
 
-  const { plan, calculation, projections, nudges } = summary;
+  const { plan, calculation, projections } = summary;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-[#0E1B15] border border-[#2D4A3E] rounded-xl shadow-lg">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white border border-[#E7E5E4] rounded-xl shadow-xs">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold font-serif text-[#F3F6F3]">FIRE Planner</h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#B88728]/20 border border-[#B88728]/40 text-[#B88728]">
-              Track A
+            <h1 className="text-2xl font-bold font-serif text-[#1C1917]">FIRE Planner</h1>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#B88728]/10 border border-[#B88728]/30 text-[#B88728]">
+              Retirement Planning
             </span>
           </div>
-          <p className="text-xs text-[#8DA698] mt-1">
+          <p className="text-xs text-[#78716C] mt-1">
             Financial Independence & Early Retirement forecasting powered by the 4% Safe Withdrawal Rule & compound growth.
           </p>
         </div>
@@ -191,13 +206,13 @@ export const FirePlanner: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={handleSeedSampleData}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-[#8DA698] hover:text-[#F3F6F3] border border-[#2D4A3E] hover:bg-[#12241C] rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-[#78716C] hover:text-[#1C1917] border border-[#E7E5E4] hover:bg-[#FAFAF9] rounded-lg transition-colors"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#B88728]" /> Try Sample Data
           </button>
           <button
             onClick={handleUpdatePlan}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#0E1B15] bg-[#B88728] hover:bg-[#d49d32] rounded-lg transition-colors shadow-md"
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#B88728] hover:bg-[#a67520] rounded-lg transition-colors shadow-xs"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Recalculate Plan
           </button>
@@ -205,12 +220,12 @@ export const FirePlanner: React.FC = () => {
       </div>
 
       {/* Top Mode Rail & View Switcher */}
-      <div className="flex items-center justify-between border-b border-[#1E382B] pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#E7E5E4] pb-3 gap-3">
         <div className="flex items-center gap-6 text-xs font-semibold">
           <button
             onClick={() => setActiveTab('INPUTS')}
             className={`pb-2 border-b-2 transition-colors flex items-center gap-2 ${
-              activeTab === 'INPUTS' ? 'border-[#B88728] text-[#B88728]' : 'border-transparent text-[#8DA698] hover:text-[#F3F6F3]'
+              activeTab === 'INPUTS' ? 'border-[#B88728] text-[#B88728]' : 'border-transparent text-[#78716C] hover:text-[#1C1917]'
             }`}
           >
             <Calendar className="w-4 h-4" /> Input Parameters
@@ -218,7 +233,7 @@ export const FirePlanner: React.FC = () => {
           <button
             onClick={() => setActiveTab('SUMMARY')}
             className={`pb-2 border-b-2 transition-colors flex items-center gap-2 ${
-              activeTab === 'SUMMARY' ? 'border-[#B88728] text-[#B88728]' : 'border-transparent text-[#8DA698] hover:text-[#F3F6F3]'
+              activeTab === 'SUMMARY' ? 'border-[#B88728] text-[#B88728]' : 'border-transparent text-[#78716C] hover:text-[#1C1917]'
             }`}
           >
             <BarChart2 className="w-4 h-4" /> Summary & Projections Tab
@@ -226,14 +241,14 @@ export const FirePlanner: React.FC = () => {
         </div>
 
         {/* Mode Switcher Buttons */}
-        <div className="flex items-center gap-1 p-1 bg-[#12241C] border border-[#2D4A3E] rounded-lg text-xs">
+        <div className="flex items-center gap-1 p-1 bg-[#FAFAF9] border border-[#E7E5E4] rounded-lg text-xs">
           <button
             onClick={() => {
               setActiveMode('YEARS_TO_FIRE');
               handleUpdatePlan();
             }}
-            className={`px-3 py-1 rounded font-semibold transition-all ${
-              activeMode === 'YEARS_TO_FIRE' ? 'bg-[#B88728] text-[#0E1B15]' : 'text-[#8DA698] hover:text-[#F3F6F3]'
+            className={`px-3 py-1.5 rounded font-semibold transition-all ${
+              activeMode === 'YEARS_TO_FIRE' ? 'bg-[#B88728] text-white shadow-xs' : 'text-[#78716C] hover:text-[#1C1917]'
             }`}
           >
             Mode 1: Years to FIRE
@@ -243,8 +258,8 @@ export const FirePlanner: React.FC = () => {
               setActiveMode('REQUIRED_SAVINGS');
               handleUpdatePlan();
             }}
-            className={`px-3 py-1 rounded font-semibold transition-all ${
-              activeMode === 'REQUIRED_SAVINGS' ? 'bg-[#B88728] text-[#0E1B15]' : 'text-[#8DA698] hover:text-[#F3F6F3]'
+            className={`px-3 py-1.5 rounded font-semibold transition-all ${
+              activeMode === 'REQUIRED_SAVINGS' ? 'bg-[#B88728] text-white shadow-xs' : 'text-[#78716C] hover:text-[#1C1917]'
             }`}
           >
             Mode 2: Required Savings
@@ -257,24 +272,33 @@ export const FirePlanner: React.FC = () => {
           fireNumber={calculation.fireNumber}
           effectiveCurrentSavings={plan.effectiveCurrentSavings}
           currentProgressPercentage={calculation.currentProgressPercentage}
+          yearsToFire={calculation.yearsToFire}
+          computedRetirementAge={calculation.computedRetirementAge}
+          requiredMonthlySavings={calculation.requiredMonthlySavings}
           projections={projections}
           monthlySavings={plan.monthlySavings}
           expectedAnnualReturnPct={plan.expectedAnnualReturnPct}
+          postRetirementReturnPct={plan.postRetirementReturnPct}
           expectedAnnualInflationPct={plan.expectedAnnualInflationPct}
           safeWithdrawalRatePct={plan.safeWithdrawalRatePct}
+          annualExpensesInRetirement={plan.annualExpensesInRetirement}
+          activeMode={activeMode}
+          targetRetirementAge={plan.targetRetirementAge}
+          onNavigateToModule={onNavigateToModule}
+          onBackToInputs={() => setActiveTab('INPUTS')}
         />
       ) : (
         /* TWO-COLUMN LAYOUT */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* LEFT COLUMN: Input Parameters Form (2 Spans) */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="p-6 bg-[#0E1B15] border border-[#2D4A3E] rounded-xl space-y-5">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#8DA698] border-b border-[#1E382B] pb-3">
+            <div className="p-6 bg-white border border-[#E7E5E4] rounded-xl shadow-xs space-y-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#78716C] border-b border-[#E7E5E4] pb-3">
                 1. Starting Corpus & Source Sync
               </h3>
 
               <div className="space-y-4">
-                <label className="block text-xs font-medium uppercase tracking-wider text-[#8DA698]">
+                <label className="block text-xs font-medium uppercase tracking-wider text-[#78716C]">
                   Current Savings & Investments Source
                 </label>
 
@@ -284,12 +308,12 @@ export const FirePlanner: React.FC = () => {
                     onClick={() => setCurrentSavingsSource('MANUAL')}
                     className={`p-3 border rounded-lg text-left transition-all ${
                       currentSavingsSource === 'MANUAL'
-                        ? 'border-[#B88728] bg-[#B88728]/10 text-[#F3F6F3]'
-                        : 'border-[#2D4A3E] bg-[#12241C] text-[#8DA698] hover:text-[#F3F6F3]'
+                        ? 'border-[#B88728] bg-[#B88728]/10 text-[#1C1917]'
+                        : 'border-[#E7E5E4] bg-[#FAFAF9] text-[#78716C] hover:text-[#1C1917]'
                     }`}
                   >
                     <h4 className="text-xs font-semibold">Your Own Total</h4>
-                    <p className="text-[10px] text-[#6B8576] mt-0.5">Manual ₹ override</p>
+                    <p className="text-[10px] text-[#A8A29E] mt-0.5">Manual ₹ override</p>
                   </button>
 
                   <button
@@ -297,12 +321,12 @@ export const FirePlanner: React.FC = () => {
                     onClick={() => setCurrentSavingsSource('NET_WORTH')}
                     className={`p-3 border rounded-lg text-left transition-all ${
                       currentSavingsSource === 'NET_WORTH'
-                        ? 'border-[#B88728] bg-[#B88728]/10 text-[#F3F6F3]'
-                        : 'border-[#2D4A3E] bg-[#12241C] text-[#8DA698] hover:text-[#F3F6F3]'
+                        ? 'border-[#B88728] bg-[#B88728]/10 text-[#1C1917]'
+                        : 'border-[#E7E5E4] bg-[#FAFAF9] text-[#78716C] hover:text-[#1C1917]'
                     }`}
                   >
                     <h4 className="text-xs font-semibold">Net Worth Tracker</h4>
-                    <p className="text-[10px] text-[#6B8576] mt-0.5">Auto-synced assets</p>
+                    <p className="text-[10px] text-[#A8A29E] mt-0.5">Auto-synced assets</p>
                   </button>
 
                   <button
@@ -310,22 +334,22 @@ export const FirePlanner: React.FC = () => {
                     onClick={() => setCurrentSavingsSource('PORTFOLIO')}
                     className={`p-3 border rounded-lg text-left transition-all ${
                       currentSavingsSource === 'PORTFOLIO'
-                        ? 'border-[#B88728] bg-[#B88728]/10 text-[#F3F6F3]'
-                        : 'border-[#2D4A3E] bg-[#12241C] text-[#8DA698] hover:text-[#F3F6F3]'
+                        ? 'border-[#B88728] bg-[#B88728]/10 text-[#1C1917]'
+                        : 'border-[#E7E5E4] bg-[#FAFAF9] text-[#78716C] hover:text-[#1C1917]'
                     }`}
                   >
                     <h4 className="text-xs font-semibold">Portfolio Tracker</h4>
-                    <p className="text-[10px] text-[#6B8576] mt-0.5">Auto-synced portfolio</p>
+                    <p className="text-[10px] text-[#A8A29E] mt-0.5">Auto-synced portfolio</p>
                   </button>
                 </div>
 
                 {currentSavingsSource === 'MANUAL' ? (
                   <div>
-                    <label className="block text-xs font-medium uppercase tracking-wider text-[#8DA698] mb-2">
+                    <label className="block text-xs font-medium uppercase tracking-wider text-[#78716C] mb-2">
                       Manual Starting Corpus (₹)
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8DA698] text-sm">₹</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C] text-sm font-semibold">₹</span>
                       <input
                         type="number"
                         min="0"
@@ -333,25 +357,25 @@ export const FirePlanner: React.FC = () => {
                         value={manualCurrentSavings}
                         onChange={(e) => setManualCurrentSavings(e.target.value === '' ? '' : Number(e.target.value))}
                         onBlur={handleUpdatePlan}
-                        className="w-full pl-8 pr-4 py-2.5 bg-[#12241C] border border-[#2D4A3E] rounded-lg text-[#F3F6F3] font-semibold text-base focus:outline-none focus:border-[#B88728]"
+                        className="w-full pl-8 pr-4 py-2.5 bg-white border border-[#E7E5E4] rounded-lg text-[#1C1917] font-semibold text-base focus:outline-none focus:border-[#B88728]"
                       />
                     </div>
                   </div>
                 ) : (
-                  <div className="p-3 bg-[#12241C] border border-[#1B6B44]/40 rounded-lg flex items-center justify-between text-xs text-[#8DA698]">
+                  <div className="p-3 bg-[#FAFAF9] border border-emerald-300 rounded-lg flex items-center justify-between text-xs text-[#78716C]">
                     <span>Synced Effective Starting Corpus:</span>
-                    <span className="font-bold text-[#F3F6F3]"><Money amount={plan.effectiveCurrentSavings} /></span>
+                    <span className="font-bold text-[#1C1917]"><Money amount={plan.effectiveCurrentSavings} /></span>
                   </div>
                 )}
               </div>
 
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#8DA698] border-b border-[#1E382B] pt-4 pb-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#78716C] border-b border-[#E7E5E4] pt-4 pb-3">
                 2. Age & Savings Parameters
               </h3>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-[#8DA698] mb-2">
+                  <label className="block text-xs font-medium uppercase tracking-wider text-[#78716C] mb-2">
                     Current Age (Optional)
                   </label>
                   <input
@@ -362,13 +386,13 @@ export const FirePlanner: React.FC = () => {
                     value={currentAge}
                     onChange={(e) => setCurrentAge(e.target.value === '' ? '' : Number(e.target.value))}
                     onBlur={handleUpdatePlan}
-                    className="w-full px-4 py-2.5 bg-[#12241C] border border-[#2D4A3E] rounded-lg text-[#F3F6F3] focus:outline-none focus:border-[#B88728]"
+                    className="w-full px-4 py-2.5 bg-white border border-[#E7E5E4] rounded-lg text-[#1C1917] focus:outline-none focus:border-[#B88728]"
                   />
                 </div>
 
                 {activeMode === 'REQUIRED_SAVINGS' && (
                   <div>
-                    <label className="block text-xs font-medium uppercase tracking-wider text-[#8DA698] mb-2">
+                    <label className="block text-xs font-medium uppercase tracking-wider text-[#78716C] mb-2">
                       Target Retirement Age *
                     </label>
                     <input
@@ -379,18 +403,18 @@ export const FirePlanner: React.FC = () => {
                       value={targetRetirementAge}
                       onChange={(e) => setTargetRetirementAge(e.target.value === '' ? '' : Number(e.target.value))}
                       onBlur={handleUpdatePlan}
-                      className="w-full px-4 py-2.5 bg-[#12241C] border border-[#2D4A3E] rounded-lg text-[#F3F6F3] focus:outline-none focus:border-[#B88728]"
+                      className="w-full px-4 py-2.5 bg-white border border-[#E7E5E4] rounded-lg text-[#1C1917] focus:outline-none focus:border-[#B88728]"
                     />
                   </div>
                 )}
 
                 {activeMode === 'YEARS_TO_FIRE' && (
                   <div>
-                    <label className="block text-xs font-medium uppercase tracking-wider text-[#8DA698] mb-2">
+                    <label className="block text-xs font-medium uppercase tracking-wider text-[#78716C] mb-2">
                       Monthly Savings Rate (₹/mo)
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8DA698] text-sm">₹</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C] text-sm font-semibold">₹</span>
                       <input
                         type="number"
                         min="0"
@@ -399,26 +423,26 @@ export const FirePlanner: React.FC = () => {
                         value={monthlySavings}
                         onChange={(e) => setMonthlySavings(e.target.value === '' ? '' : Number(e.target.value))}
                         onBlur={handleUpdatePlan}
-                        className="w-full pl-8 pr-4 py-2.5 bg-[#12241C] border border-[#2D4A3E] rounded-lg text-[#F3F6F3] font-semibold focus:outline-none focus:border-[#B88728]"
+                        className="w-full pl-8 pr-4 py-2.5 bg-white border border-[#E7E5E4] rounded-lg text-[#1C1917] font-semibold focus:outline-none focus:border-[#B88728]"
                       />
                     </div>
                   </div>
                 )}
               </div>
 
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#8DA698] border-b border-[#1E382B] pt-4 pb-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#78716C] border-b border-[#E7E5E4] pt-4 pb-3">
                 3. Expenses & Return Assumptions (Standardized Finora Baseline)
               </h3>
 
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-[#8DA698] mb-2">
+                <label className="block text-xs font-medium uppercase tracking-wider text-[#78716C] mb-2">
                   Annual Expenses in Retirement (₹/yr)
                 </label>
-                <p className="text-[11px] text-[#6B8576] mb-2">
+                <p className="text-[11px] text-[#A8A29E] mb-2">
                   Expected annual living expenses after retirement (Auto-populated from Expense Tracker if zero).
                 </p>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8DA698] text-sm">₹</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C] text-sm font-semibold">₹</span>
                   <input
                     type="number"
                     min="100000"
@@ -427,14 +451,14 @@ export const FirePlanner: React.FC = () => {
                     value={annualExpensesInRetirement}
                     onChange={(e) => setAnnualExpensesInRetirement(e.target.value === '' ? '' : Number(e.target.value))}
                     onBlur={handleUpdatePlan}
-                    className="w-full pl-8 pr-4 py-2.5 bg-[#12241C] border border-[#2D4A3E] rounded-lg text-[#F3F6F3] font-semibold text-base focus:outline-none focus:border-[#B88728]"
+                    className="w-full pl-8 pr-4 py-2.5 bg-white border border-[#E7E5E4] rounded-lg text-[#1C1917] font-semibold text-base focus:outline-none focus:border-[#B88728]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-[#8DA698] mb-2">
+                  <label className="block text-xs font-medium uppercase tracking-wider text-[#78716C] mb-2">
                     Pre-Retirement CAGR (%)
                   </label>
                   <input
@@ -445,13 +469,13 @@ export const FirePlanner: React.FC = () => {
                     value={expectedAnnualReturnPct}
                     onChange={(e) => setExpectedAnnualReturnPct(Number(e.target.value))}
                     onBlur={handleUpdatePlan}
-                    className="w-full px-3 py-2 bg-[#12241C] border border-[#2D4A3E] rounded-lg text-xs text-[#F3F6F3] focus:border-[#B88728]"
+                    className="w-full px-3 py-2 bg-white border border-[#E7E5E4] rounded-lg text-xs text-[#1C1917] focus:border-[#B88728]"
                   />
-                  <span className="text-[10px] text-[#6B8576] mt-1 block">Default: 12.0%</span>
+                  <span className="text-[10px] text-[#A8A29E] mt-1 block">Default: 12.0%</span>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-[#8DA698] mb-2">
+                  <label className="block text-xs font-medium uppercase tracking-wider text-[#78716C] mb-2">
                     Safe Withdrawal Rate (%)
                   </label>
                   <input
@@ -462,13 +486,13 @@ export const FirePlanner: React.FC = () => {
                     value={safeWithdrawalRatePct}
                     onChange={(e) => setSafeWithdrawalRatePct(Number(e.target.value))}
                     onBlur={handleUpdatePlan}
-                    className="w-full px-3 py-2 bg-[#12241C] border border-[#2D4A3E] rounded-lg text-xs text-[#F3F6F3] focus:border-[#B88728]"
+                    className="w-full px-3 py-2 bg-white border border-[#E7E5E4] rounded-lg text-xs text-[#1C1917] focus:border-[#B88728]"
                   />
-                  <span className="text-[10px] text-[#6B8576] mt-1 block">Default: 4.0% (25x)</span>
+                  <span className="text-[10px] text-[#A8A29E] mt-1 block">Default: 4.0% (25x)</span>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-[#8DA698] mb-2">
+                  <label className="block text-xs font-medium uppercase tracking-wider text-[#78716C] mb-2">
                     Expected Inflation (%)
                   </label>
                   <input
@@ -479,9 +503,9 @@ export const FirePlanner: React.FC = () => {
                     value={expectedAnnualInflationPct}
                     onChange={(e) => setExpectedAnnualInflationPct(Number(e.target.value))}
                     onBlur={handleUpdatePlan}
-                    className="w-full px-3 py-2 bg-[#12241C] border border-[#2D4A3E] rounded-lg text-xs text-[#F3F6F3] focus:border-[#B88728]"
+                    className="w-full px-3 py-2 bg-white border border-[#E7E5E4] rounded-lg text-xs text-[#1C1917] focus:border-[#B88728]"
                   />
-                  <span className="text-[10px] text-[#6B8576] mt-1 block">Default: 6.0% (India)</span>
+                  <span className="text-[10px] text-[#A8A29E] mt-1 block">Default: 6.0% (India)</span>
                 </div>
               </div>
             </div>
@@ -490,42 +514,42 @@ export const FirePlanner: React.FC = () => {
           {/* RIGHT PERSISTENT SIDEBAR (1 Span) */}
           <div className="space-y-6">
             {/* 1. FIRE Number Card */}
-            <div className="p-6 bg-[#0E1B15] border border-[#2D4A3E] rounded-xl shadow-md space-y-3">
-              <div className="flex items-center justify-between text-xs text-[#8DA698]">
+            <div className="p-6 bg-white border border-[#E7E5E4] rounded-xl shadow-xs space-y-3">
+              <div className="flex items-center justify-between text-xs text-[#78716C]">
                 <span className="font-semibold uppercase tracking-wider">Target FIRE Number</span>
                 <Flame className="w-4 h-4 text-[#B88728]" />
               </div>
-              <p className="text-3xl font-bold font-serif text-[#F3F6F3]">
+              <p className="text-3xl font-bold font-serif text-[#1C1917]">
                 <Money amount={calculation.fireNumber} />
               </p>
-              <p className="text-xs text-[#8DA698] border-t border-[#1E382B] pt-2">
+              <p className="text-xs text-[#78716C] border-t border-[#E7E5E4] pt-2">
                 {plan.safeWithdrawalRatePct}% withdrawal rate × <Money amount={plan.annualExpensesInRetirement} /> annual expenses ({calculation.swrMultiple}x multiple)
               </p>
             </div>
 
             {/* 2. Active Mode Result Card */}
-            <div className="p-6 bg-[#12241C] border border-[#B88728]/40 rounded-xl shadow-md space-y-3">
+            <div className="p-6 bg-[#FAFAF9] border border-[#B88728]/40 rounded-xl shadow-xs space-y-3">
               <span className="text-xs font-semibold uppercase tracking-wider text-[#B88728]">
                 {activeMode === 'YEARS_TO_FIRE' ? 'Years to FIRE Forecast' : 'Required Monthly Savings'}
               </span>
 
               {activeMode === 'YEARS_TO_FIRE' ? (
                 <div>
-                  <p className="text-3xl font-bold text-[#F3F6F3]">
+                  <p className="text-3xl font-bold text-[#1C1917]">
                     {calculation.yearsToFire !== null ? `${calculation.yearsToFire} Years` : '—'}
                   </p>
                   {calculation.computedRetirementAge !== null && (
-                    <p className="text-xs text-[#1B6B44] font-semibold mt-1">
+                    <p className="text-xs text-emerald-700 font-semibold mt-1">
                       Retire at Age {calculation.computedRetirementAge} 🎉
                     </p>
                   )}
                 </div>
               ) : (
                 <div>
-                  <p className="text-3xl font-bold text-[#1B6B44]">
-                    <Money amount={calculation.requiredMonthlySavings || 0} /><span className="text-xs text-[#8DA698] font-normal">/mo</span>
+                  <p className="text-3xl font-bold text-emerald-700">
+                    <Money amount={calculation.requiredMonthlySavings || 0} /><span className="text-xs text-[#78716C] font-normal">/mo</span>
                   </p>
-                  <p className="text-xs text-[#8DA698] mt-1">
+                  <p className="text-xs text-[#78716C] mt-1">
                     To retire by Age {plan.targetRetirementAge || '—'}
                   </p>
                 </div>
@@ -533,8 +557,8 @@ export const FirePlanner: React.FC = () => {
             </div>
 
             {/* 3. About FIRE Card */}
-            <div className="p-6 bg-[#0E1B15] border border-[#2D4A3E] rounded-xl space-y-3 text-xs text-[#8DA698]">
-              <h4 className="font-semibold text-[#F3F6F3] flex items-center gap-2">
+            <div className="p-6 bg-white border border-[#E7E5E4] rounded-xl shadow-xs space-y-3 text-xs text-[#78716C]">
+              <h4 className="font-semibold text-[#1C1917] flex items-center gap-2">
                 <HelpCircle className="w-4 h-4 text-[#B88728]" /> About FIRE & The 4% Rule
               </h4>
               <p>

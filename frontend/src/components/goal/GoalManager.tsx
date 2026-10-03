@@ -1,30 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Target,
   Plus,
   Settings as SettingsIcon,
   Layers,
   Sparkles,
-  TrendingUp,
   AlertTriangle,
   CheckCircle,
-  Calendar,
   Clock,
-  PieChart as PieIcon,
   PlusCircle,
   ShieldCheck,
   ChevronRight,
   Filter,
 } from 'lucide-react';
 
-import { Money, InsightsCard, EmptyState, OnboardingDrawer } from '../shared';
+import apiClient from '../../api/client';
+import { Money } from '../shared';
 import { GoalSettingsModal } from './GoalSettingsModal';
 import { SingleContributeModal } from './SingleContributeModal';
 import { BulkContributeModal } from './BulkContributeModal';
 import { CreateGoalModal } from './CreateGoalModal';
 import { GoalDetailModal } from './GoalDetailModal';
 
-export const GoalManager: React.FC = () => {
+interface GoalManagerProps {
+  initialParams?: Record<string, string>;
+}
+
+export const GoalManager: React.FC<GoalManagerProps> = ({ initialParams }) => {
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TIMELINE' | 'ACHIEVEMENTS' | 'HISTORY'>('OVERVIEW');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
@@ -39,21 +40,37 @@ export const GoalManager: React.FC = () => {
   const [isSingleContributeOpen, setIsSingleContributeOpen] = useState(false);
   const [isBulkContributeOpen, setIsBulkContributeOpen] = useState(false);
   const [selectedGoalForContribute, setSelectedGoalForContribute] = useState<{ id: string; name: string } | null>(null);
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
   useEffect(() => {
     fetchDashboard();
   }, []);
 
+  useEffect(() => {
+    if (initialParams && Object.keys(initialParams).length > 0) {
+      if (initialParams.from === 'learn' || initialParams.target || initialParams.name) {
+        setIsCreateOpen(true);
+      }
+    }
+  }, [initialParams]);
+
+  const createInitialValues = initialParams && Object.keys(initialParams).length > 0 ? {
+    name: initialParams.name ? decodeURIComponent(initialParams.name) : undefined,
+    category: initialParams.category || undefined,
+    targetAmount: initialParams.target ? Number(initialParams.target) : undefined,
+    targetDate: initialParams.date || undefined,
+    inflationRatePct: initialParams.inflation ? Number(initialParams.inflation) : undefined,
+    expectedAnnualReturnPct: initialParams.return ? Number(initialParams.return) : undefined,
+    startingBalance: initialParams.start ? Number(initialParams.start) : undefined,
+    contributionFrequency: initialParams.freq ? initialParams.freq.toUpperCase() : undefined,
+  } : undefined;
+
   const fetchDashboard = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/v1/goals/dashboard');
-      if (res.ok) {
-        const data = await res.json();
-        setDashboard(data);
+      const res = await apiClient.get('/goals/dashboard');
+      if (res.data) {
+        setDashboard(res.data);
       } else {
-        // Fallback default fixture if mock server / auth varies
         seedDefaultState();
       }
     } catch (e) {
@@ -144,7 +161,7 @@ export const GoalManager: React.FC = () => {
 
   const handleSeedSampleData = async () => {
     try {
-      await fetch('/api/v1/goals/seed', { method: 'POST' });
+      await apiClient.post('/goals/seed');
       fetchDashboard();
     } catch (e) {
       fetchDashboard();
@@ -153,11 +170,7 @@ export const GoalManager: React.FC = () => {
 
   const handleCreateGoal = async (goalData: any) => {
     try {
-      await fetch('/api/v1/goals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(goalData),
-      });
+      await apiClient.post('/goals', goalData);
       fetchDashboard();
     } catch (e) {
       console.error(e);
@@ -166,11 +179,7 @@ export const GoalManager: React.FC = () => {
 
   const handleSingleContribute = async (contrib: any) => {
     try {
-      await fetch(`/api/v1/goals/${contrib.goalId}/contribute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(contrib),
-      });
+      await apiClient.post(`/goals/${contrib.goalId}/contribute`, contrib);
       fetchDashboard();
     } catch (e) {
       console.error(e);
@@ -179,11 +188,7 @@ export const GoalManager: React.FC = () => {
 
   const handleBulkContribute = async (payload: any) => {
     try {
-      await fetch('/api/v1/goals/bulk-contribute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      await apiClient.post('/goals/bulk-contribute', payload);
       fetchDashboard();
     } catch (e) {
       console.error(e);
@@ -192,11 +197,7 @@ export const GoalManager: React.FC = () => {
 
   const handleSaveSettings = async (settings: any) => {
     try {
-      await fetch('/api/v1/goals/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
-      });
+      await apiClient.put('/goals/settings', settings);
       fetchDashboard();
     } catch (e) {
       console.error(e);
@@ -205,10 +206,9 @@ export const GoalManager: React.FC = () => {
 
   const handleOpenGoalDetail = async (goalId: string) => {
     try {
-      const res = await fetch(`/api/v1/goals/${goalId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setSelectedGoalDetail(data);
+      const res = await apiClient.get(`/goals/${goalId}`);
+      if (res.data) {
+        setSelectedGoalDetail(res.data);
       }
     } catch (e) {
       const found = dashboard?.goals.find((g: any) => g.id === goalId);
@@ -231,7 +231,7 @@ export const GoalManager: React.FC = () => {
 
   const handleStatusChange = async (goalId: string, status: string) => {
     try {
-      await fetch(`/api/v1/goals/${goalId}/status?status=${status}`, { method: 'PATCH' });
+      await apiClient.patch(`/goals/${goalId}/status?status=${status}`);
       setSelectedGoalDetail(null);
       fetchDashboard();
     } catch (e) {
@@ -241,7 +241,7 @@ export const GoalManager: React.FC = () => {
 
   const handleDeleteGoal = async (goalId: string) => {
     try {
-      await fetch(`/api/v1/goals/${goalId}`, { method: 'DELETE' });
+      await apiClient.delete(`/goals/${goalId}`);
       setSelectedGoalDetail(null);
       fetchDashboard();
     } catch (e) {
@@ -266,15 +266,15 @@ export const GoalManager: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Top Header & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-[#0E1B15] border border-[#2D4A3E] rounded-xl shadow-lg">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white border border-[#E7E5E4] rounded-xl shadow-xs">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold font-serif text-[#F3F6F3]">Goal Manager</h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#B88728]/20 border border-[#B88728]/40 text-[#B88728]">
-              Track A
+            <h1 className="text-2xl font-bold font-serif text-[#1C1917]">Goal Manager</h1>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#B88728]/10 border border-[#B88728]/30 text-[#B88728]">
+              Target Planning
             </span>
           </div>
-          <p className="text-xs text-[#8DA698] mt-1">
+          <p className="text-xs text-[#78716C] mt-1">
             Pace monitoring against monthly savings capacity, inflation-adjusted target costing & Portfolio links.
           </p>
         </div>
@@ -282,26 +282,26 @@ export const GoalManager: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={handleSeedSampleData}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-[#8DA698] hover:text-[#F3F6F3] border border-[#2D4A3E] hover:bg-[#12241C] rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-[#78716C] hover:text-[#1C1917] border border-[#E7E5E4] hover:bg-[#FAFAF9] rounded-lg transition-colors"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#B88728]" /> Try Sample Data
           </button>
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="p-2 text-xs font-medium text-[#8DA698] hover:text-[#F3F6F3] border border-[#2D4A3E] hover:bg-[#12241C] rounded-lg transition-colors"
+            className="p-2 text-xs font-medium text-[#78716C] hover:text-[#1C1917] border border-[#E7E5E4] hover:bg-[#FAFAF9] rounded-lg transition-colors"
             title="Settings"
           >
             <SettingsIcon className="w-4 h-4" />
           </button>
           <button
             onClick={() => setIsBulkContributeOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#F3F6F3] bg-[#12241C] border border-[#2D4A3E] hover:border-[#B88728] rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#1C1917] bg-[#FAFAF9] border border-[#E7E5E4] hover:border-[#B88728] rounded-lg transition-colors"
           >
             <Layers className="w-4 h-4 text-[#B88728]" /> Bulk Contribute
           </button>
           <button
             onClick={() => setIsCreateOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#0E1B15] bg-[#B88728] hover:bg-[#d49d32] rounded-lg transition-colors shadow-md"
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#B88728] hover:bg-[#a67520] rounded-lg transition-colors shadow-xs"
           >
             <Plus className="w-4 h-4" /> Create Goal
           </button>
@@ -310,44 +310,44 @@ export const GoalManager: React.FC = () => {
 
       {/* Header KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 bg-[#0E1B15] border border-[#2D4A3E] rounded-xl">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-[#8DA698]">Total Saved (Current Value)</span>
-          <p className="text-2xl font-bold font-serif text-[#F3F6F3] mt-1">
+        <div className="p-5 bg-white border border-[#E7E5E4] rounded-xl shadow-xs">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-[#78716C]">Total Saved (Current Value)</span>
+          <p className="text-2xl font-bold font-serif text-[#1C1917] mt-1">
             <Money amount={dashboard.totalSavedAmount} />
           </p>
-          <div className="flex items-center justify-between text-xs text-[#8DA698] mt-2">
+          <div className="flex items-center justify-between text-xs text-[#78716C] mt-2">
             <span>Adj Target: <Money amount={dashboard.totalAdjustedFutureValue} /></span>
             <span className="font-semibold text-[#B88728]">{dashboard.overallProgressPercentage}%</span>
           </div>
         </div>
 
-        <div className="p-5 bg-[#0E1B15] border border-[#2D4A3E] rounded-xl">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-[#8DA698]">Goal Health & Status</span>
+        <div className="p-5 bg-white border border-[#E7E5E4] rounded-xl shadow-xs">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-[#78716C]">Goal Health & Status</span>
           <div className="flex items-center gap-3 mt-1.5">
-            <div className="flex items-center gap-1.5 text-sm font-bold text-[#1B6B44]">
+            <div className="flex items-center gap-1.5 text-sm font-bold text-emerald-700">
               <CheckCircle className="w-4 h-4" /> {dashboard.onTrackCount} On Track
             </div>
-            <div className="flex items-center gap-1.5 text-sm font-bold text-[#A83A2E]">
+            <div className="flex items-center gap-1.5 text-sm font-bold text-rose-700">
               <AlertTriangle className="w-4 h-4" /> {dashboard.behindCount} Behind
             </div>
           </div>
-          <p className="text-xs text-[#8DA698] mt-2">{dashboard.activeGoalsCount} total active goals monitored</p>
+          <p className="text-xs text-[#78716C] mt-2">{dashboard.activeGoalsCount} total active goals monitored</p>
         </div>
 
-        <div className="p-5 bg-[#0E1B15] border border-[#2D4A3E] rounded-xl">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-[#8DA698]">Required Monthly Savings</span>
-          <p className="text-2xl font-bold font-serif text-[#1B6B44] mt-1">
-            <Money amount={dashboard.totalRequiredMonthlyContribution} /><span className="text-xs font-normal text-[#8DA698]">/mo</span>
+        <div className="p-5 bg-white border border-[#E7E5E4] rounded-xl shadow-xs">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-[#78716C]">Required Monthly Savings</span>
+          <p className="text-2xl font-bold font-serif text-emerald-700 mt-1">
+            <Money amount={dashboard.totalRequiredMonthlyContribution} /><span className="text-xs font-normal text-[#78716C]">/mo</span>
           </p>
 
-          <p className="text-xs text-[#8DA698] mt-2">
+          <p className="text-xs text-[#78716C] mt-2">
             Capacity Ceiling: <Money amount={dashboard.monthlySavingsCapacity} />/mo
           </p>
         </div>
 
-        <div className="p-5 bg-[#0E1B15] border border-[#2D4A3E] rounded-xl">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-[#8DA698]">Next Milestone Due</span>
-          <p className="text-base font-semibold text-[#F3F6F3] mt-1 truncate">
+        <div className="p-5 bg-white border border-[#E7E5E4] rounded-xl shadow-xs">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-[#78716C]">Next Milestone Due</span>
+          <p className="text-base font-semibold text-[#1C1917] mt-1 truncate">
             {dashboard.nextDueGoalName}
           </p>
           <div className="flex items-center gap-1.5 text-xs text-[#B88728] mt-2">
@@ -357,14 +357,14 @@ export const GoalManager: React.FC = () => {
       </div>
 
       {/* Capacity Bar & Over-Capacity Banner */}
-      <div className="p-5 bg-[#0E1B15] border border-[#2D4A3E] rounded-xl space-y-3">
+      <div className="p-5 bg-white border border-[#E7E5E4] rounded-xl shadow-xs space-y-3">
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-[#1B6B44]" />
-            <span className="font-semibold text-[#F3F6F3]">Monthly Savings Capacity Bar</span>
+            <ShieldCheck className="w-4 h-4 text-emerald-700" />
+            <span className="font-semibold text-[#1C1917]">Monthly Savings Capacity Bar</span>
           </div>
-          <div className="text-[#8DA698]">
-            <span className={dashboard.isOverCapacity ? 'text-[#A83A2E] font-bold' : 'text-[#1B6B44] font-bold'}>
+          <div className="text-[#78716C]">
+            <span className={dashboard.isOverCapacity ? 'text-rose-700 font-bold' : 'text-emerald-700 font-bold'}>
               <Money amount={dashboard.totalRequiredMonthlyContribution} />
             </span>{' '}
             / <Money amount={dashboard.monthlySavingsCapacity} />/mo capacity
@@ -372,10 +372,10 @@ export const GoalManager: React.FC = () => {
         </div>
 
         {/* Progress bar */}
-        <div className="w-full h-3 bg-[#12241C] border border-[#2D4A3E] rounded-full overflow-hidden p-0.5">
+        <div className="w-full h-2.5 bg-stone-100 border border-[#E7E5E4] rounded-full overflow-hidden p-0.5">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
-              dashboard.isOverCapacity ? 'bg-[#A83A2E]' : 'bg-[#1B6B44]'
+              dashboard.isOverCapacity ? 'bg-rose-600' : 'bg-emerald-600'
             }`}
             style={{
               width: `${Math.min(100, (dashboard.totalRequiredMonthlyContribution / dashboard.monthlySavingsCapacity) * 100)}%`,
@@ -384,16 +384,16 @@ export const GoalManager: React.FC = () => {
         </div>
 
         {dashboard.isOverCapacity && (
-          <div className="p-3 bg-[#A83A2E]/10 border border-[#A83A2E]/30 rounded-lg flex items-center justify-between text-xs text-[#A83A2E]">
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-center justify-between text-xs text-rose-800">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-700" />
               <span>
                 Over capacity by <strong>₹{dashboard.capacityOverageAmount.toLocaleString()}/mo</strong>. Adjust your target dates or increase capacity ceiling.
               </span>
             </div>
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="px-3 py-1 bg-[#A83A2E] text-[#F3F6F3] rounded font-semibold text-[11px] hover:bg-[#c74537]"
+              className="px-3 py-1 bg-rose-600 text-white rounded font-semibold text-[11px] hover:bg-rose-700 transition-colors"
             >
               Fix in Settings
             </button>
@@ -404,7 +404,7 @@ export const GoalManager: React.FC = () => {
       {/* Nudges Feed */}
       {dashboard.nudges && dashboard.nudges.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#8DA698]">Actionable Goal Nudges</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#78716C]">Actionable Goal Nudges</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {dashboard.nudges.map((nudge: any) => (
               <div
@@ -413,15 +413,15 @@ export const GoalManager: React.FC = () => {
                   if (nudge.goalId) handleOpenGoalDetail(nudge.goalId);
                   else if (nudge.type === 'CAPACITY_OVERAGE') setIsSettingsOpen(true);
                 }}
-                className="p-4 bg-[#0E1B15] border border-[#2D4A3E] hover:border-[#B88728] rounded-xl cursor-pointer transition-all flex items-start justify-between gap-4 group"
+                className="p-4 bg-white border border-[#E7E5E4] hover:border-[#B88728] rounded-xl cursor-pointer transition-all flex items-start justify-between gap-4 group shadow-xs"
               >
                 <div>
-                  <h4 className="text-xs font-semibold text-[#F3F6F3] group-hover:text-[#B88728] transition-colors">
+                  <h4 className="text-xs font-semibold text-[#1C1917] group-hover:text-[#B88728] transition-colors">
                     {nudge.title}
                   </h4>
-                  <p className="text-xs text-[#8DA698] mt-1">{nudge.message}</p>
+                  <p className="text-xs text-[#78716C] mt-1">{nudge.message}</p>
                 </div>
-                <button className="px-2.5 py-1 text-[11px] font-semibold text-[#B88728] border border-[#B88728]/40 rounded hover:bg-[#B88728]/10 transition-colors shrink-0">
+                <button className="px-2.5 py-1 text-[11px] font-semibold text-[#B88728] border border-[#B88728]/30 rounded hover:bg-[#B88728]/10 transition-colors shrink-0">
                   {nudge.actionLabel}
                 </button>
               </div>
@@ -431,12 +431,12 @@ export const GoalManager: React.FC = () => {
       )}
 
       {/* Tabs & Filter Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1E382B] pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E7E5E4] pb-3">
         <div className="flex items-center gap-6 text-xs font-semibold">
           <button
             onClick={() => setActiveTab('OVERVIEW')}
             className={`pb-2 border-b-2 transition-colors ${
-              activeTab === 'OVERVIEW' ? 'border-[#B88728] text-[#B88728]' : 'border-transparent text-[#8DA698] hover:text-[#F3F6F3]'
+              activeTab === 'OVERVIEW' ? 'border-[#B88728] text-[#B88728]' : 'border-transparent text-[#78716C] hover:text-[#1C1917]'
             }`}
           >
             Goal Cards ({goals.length})
@@ -444,7 +444,7 @@ export const GoalManager: React.FC = () => {
           <button
             onClick={() => setActiveTab('TIMELINE')}
             className={`pb-2 border-b-2 transition-colors ${
-              activeTab === 'TIMELINE' ? 'border-[#B88728] text-[#B88728]' : 'border-transparent text-[#8DA698] hover:text-[#F3F6F3]'
+              activeTab === 'TIMELINE' ? 'border-[#B88728] text-[#B88728]' : 'border-transparent text-[#78716C] hover:text-[#1C1917]'
             }`}
           >
             Timeline View
@@ -453,11 +453,11 @@ export const GoalManager: React.FC = () => {
 
         {/* Filter Dropdown */}
         <div className="flex items-center gap-2">
-          <Filter className="w-3.5 h-3.5 text-[#8DA698]" />
+          <Filter className="w-3.5 h-3.5 text-[#78716C]" />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-[#12241C] border border-[#2D4A3E] text-xs text-[#F3F6F3] px-3 py-1.5 rounded-lg focus:outline-none focus:border-[#B88728]"
+            className="bg-white border border-[#E7E5E4] text-xs text-[#1C1917] px-3 py-1.5 rounded-lg focus:outline-none focus:border-[#B88728]"
           >
             <option value="ALL">All Active Goals</option>
             <option value="ACTIVE">On Track Only</option>
@@ -473,15 +473,15 @@ export const GoalManager: React.FC = () => {
           {filteredGoals.map((g: any) => (
             <div
               key={g.id}
-              className="p-5 bg-[#0E1B15] border border-[#2D4A3E] hover:border-[#B88728] rounded-xl transition-all space-y-4 flex flex-col justify-between"
+              className="p-5 bg-white border border-[#E7E5E4] hover:border-[#B88728] rounded-xl transition-all space-y-4 flex flex-col justify-between shadow-xs"
             >
               <div>
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8DA698] bg-[#12241C] px-2 py-0.5 rounded border border-[#1E382B]">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#78716C] bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
                     {g.category.replace('_', ' ')}
                   </span>
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
-                    g.status === 'BEHIND' ? 'bg-[#A83A2E]/20 border-[#A83A2E]/40 text-[#A83A2E]' : 'bg-[#1B6B44]/20 border-[#1B6B44]/40 text-[#1B6B44]'
+                    g.status === 'BEHIND' ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
                   }`}>
                     {g.status}
                   </span>
@@ -489,29 +489,29 @@ export const GoalManager: React.FC = () => {
 
                 <h3
                   onClick={() => handleOpenGoalDetail(g.id)}
-                  className="text-base font-bold text-[#F3F6F3] hover:text-[#B88728] cursor-pointer transition-colors"
+                  className="text-base font-bold text-[#1C1917] hover:text-[#B88728] cursor-pointer transition-colors"
                 >
                   {g.name}
                 </h3>
 
-                <div className="flex items-center justify-between text-xs text-[#8DA698] mt-3">
-                  <span>Saved: <span className="font-semibold text-[#F3F6F3]"><Money amount={g.currentValue} /></span></span>
+                <div className="flex items-center justify-between text-xs text-[#78716C] mt-3">
+                  <span>Saved: <span className="font-semibold text-[#1C1917]"><Money amount={g.currentValue} /></span></span>
                   <span>Target: <Money amount={g.adjustedFutureValue} /></span>
                 </div>
 
                 {/* Progress bar */}
-                <div className="w-full h-2 bg-[#12241C] border border-[#2D4A3E] rounded-full overflow-hidden mt-2">
+                <div className="w-full h-2 bg-stone-100 border border-[#E7E5E4] rounded-full overflow-hidden mt-2">
                   <div
-                    className="h-full bg-gradient-to-r from-[#1B6B44] to-[#B88728] rounded-full"
+                    className="h-full bg-gradient-to-r from-emerald-600 to-[#B88728] rounded-full"
                     style={{ width: `${Math.min(100, g.progressPercentage)}%` }}
                   />
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-[#1E382B] flex items-center justify-between text-xs">
+              <div className="pt-3 border-t border-[#E7E5E4] flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-[10px] text-[#8DA698] uppercase">Req. SIP</span>
-                  <p className="font-semibold text-[#1B6B44]"><Money amount={g.requiredMonthlyContribution} />/mo</p>
+                  <span className="text-[10px] text-[#78716C] uppercase">Req. SIP</span>
+                  <p className="font-semibold text-emerald-700"><Money amount={g.requiredMonthlyContribution} />/mo</p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -520,13 +520,13 @@ export const GoalManager: React.FC = () => {
                       setSelectedGoalForContribute({ id: g.id, name: g.name });
                       setIsSingleContributeOpen(true);
                     }}
-                    className="p-1.5 text-xs text-[#B88728] border border-[#B88728]/30 rounded hover:bg-[#B88728]/10 transition-colors flex items-center gap-1"
+                    className="p-1.5 text-xs text-[#B88728] border border-[#B88728]/30 rounded hover:bg-[#B88728]/10 transition-colors flex items-center gap-1 font-medium"
                   >
                     <PlusCircle className="w-3.5 h-3.5" /> +Contribute
                   </button>
                   <button
                     onClick={() => handleOpenGoalDetail(g.id)}
-                    className="p-1.5 text-[#8DA698] hover:text-[#F3F6F3] rounded hover:bg-[#12241C]"
+                    className="p-1.5 text-[#78716C] hover:text-[#1C1917] rounded hover:bg-stone-100 transition-colors"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -539,8 +539,8 @@ export const GoalManager: React.FC = () => {
 
       {/* TIMELINE TAB: Gantt-style Timeline Bars */}
       {activeTab === 'TIMELINE' && (
-        <div className="p-6 bg-[#0E1B15] border border-[#2D4A3E] rounded-xl space-y-6">
-          <div className="flex items-center justify-between text-xs text-[#8DA698] border-b border-[#1E382B] pb-3">
+        <div className="p-6 bg-white border border-[#E7E5E4] rounded-xl shadow-xs space-y-6">
+          <div className="flex items-center justify-between text-xs text-[#78716C] border-b border-[#E7E5E4] pb-3">
             <span>Goal Timeline Progress</span>
             <span>Target Horizon Marker</span>
           </div>
@@ -549,12 +549,12 @@ export const GoalManager: React.FC = () => {
             {goals.map((g: any) => (
               <div key={g.id} className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-[#F3F6F3]">{g.name}</span>
-                  <span className="text-[#8DA698]">Target Date: {g.targetDate} ({g.daysRemaining} days remaining)</span>
+                  <span className="font-semibold text-[#1C1917]">{g.name}</span>
+                  <span className="text-[#78716C]">Target Date: {g.targetDate} ({g.daysRemaining} days remaining)</span>
                 </div>
-                <div className="relative w-full h-4 bg-[#12241C] border border-[#2D4A3E] rounded-full overflow-hidden">
+                <div className="relative w-full h-3.5 bg-stone-100 border border-[#E7E5E4] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#1B6B44] rounded-full"
+                    className="h-full bg-emerald-600 rounded-full"
                     style={{ width: `${Math.min(100, g.progressPercentage)}%` }}
                   />
                   {/* Today marker */}
@@ -579,6 +579,7 @@ export const GoalManager: React.FC = () => {
       <CreateGoalModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
+        initialValues={createInitialValues}
         onSave={handleCreateGoal}
       />
 

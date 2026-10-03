@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "fp_plans")
@@ -15,6 +16,11 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @SuperBuilder
 public class FirePlan extends LinkableEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(length = 64)
+    private String id;
 
     @Column(name = "user_id", nullable = false, unique = true)
     private String userId;
@@ -65,4 +71,12 @@ public class FirePlan extends LinkableEntity {
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at", nullable = false)
+    @Builder.Default
+    private LocalDateTime updatedAt = LocalDateTime.now();
 }

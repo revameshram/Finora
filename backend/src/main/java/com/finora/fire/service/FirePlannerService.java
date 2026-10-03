@@ -1,14 +1,13 @@
 package com.finora.fire.service;
 
 import com.finora.common.growth.CompoundGrowthEngine;
-import com.finora.expense.contract.ExpenseContractMockController;
-import com.finora.expense.dto.ExpenseSummaryDto;
+import com.finora.expense.service.ExpenseService;
 import com.finora.fire.dto.*;
 import com.finora.fire.model.*;
 import com.finora.fire.repository.FirePlanRepository;
 import com.finora.fire.repository.FirePlanSnapshotRepository;
 import com.finora.networth.repository.AssetRepository;
-import com.finora.portfolio.repository.PortfolioAssetRepository;
+import com.finora.portfolio.service.PortfolioAnalyticsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,8 +27,8 @@ public class FirePlannerService {
     private final FirePlanRepository firePlanRepository;
     private final FirePlanSnapshotRepository snapshotRepository;
     private final AssetRepository netWorthAssetRepository;
-    private final PortfolioAssetRepository portfolioAssetRepository;
-    private final ExpenseContractMockController expenseContractMockController;
+    private final PortfolioAnalyticsService portfolioAnalyticsService;
+    private final ExpenseService expenseService;
 
     @Transactional(readOnly = true)
     public FireSummaryDto getFireSummary(String userId) {
@@ -119,9 +118,12 @@ public class FirePlannerService {
         // Auto-fill expenses from Expense Tracker if zero
         if (annualExpenses.compareTo(BigDecimal.ZERO) == 0) {
             try {
-                ExpenseSummaryDto summaryDto = expenseContractMockController.getExpenseSummary(null);
-                if (summaryDto != null && summaryDto.getTrailing12MonthAnnualSpend() != null) {
-                    annualExpenses = summaryDto.getTrailing12MonthAnnualSpend();
+                if (expenseService != null) {
+                    var summaryDto = expenseService.getExpenseSummaryContract(plan.getUserId(), null);
+                    if (summaryDto != null && summaryDto.getTrailing12MonthAnnualSpend() != null
+                            && summaryDto.getTrailing12MonthAnnualSpend().compareTo(BigDecimal.ZERO) > 0) {
+                        annualExpenses = summaryDto.getTrailing12MonthAnnualSpend();
+                    }
                 }
             } catch (Exception e) {
                 annualExpenses = new BigDecimal("1200000.0000"); // fallback ₹12L
@@ -317,9 +319,9 @@ public class FirePlannerService {
     private BigDecimal resolveEffectiveCurrentSavings(FirePlan plan) {
         if (plan.getCurrentSavingsSource() == FireSavingsSource.NET_WORTH) {
             try {
-                var assets = netWorthAssetRepository.findByUserId(plan.getUserId());
+                var assets = netWorthAssetRepository.findByUserIdOrderByCreatedAtDesc(plan.getUserId());
                 BigDecimal sum = assets.stream()
-                    .filter(a -> Boolean.TRUE.equals(a.getIsIncluded()))
+                    .filter(a -> a.isIncluded())
                     .map(a -> a.getValue() != null ? a.getValue() : BigDecimal.ZERO)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
                 return sum.compareTo(BigDecimal.ZERO) > 0 ? sum : plan.getManualCurrentSavings();
@@ -328,11 +330,9 @@ public class FirePlannerService {
             }
         } else if (plan.getCurrentSavingsSource() == FireSavingsSource.PORTFOLIO) {
             try {
-                var assets = portfolioAssetRepository.findByUserId(plan.getUserId());
-                BigDecimal sum = assets.stream()
-                    .map(a -> new BigDecimal("50000.0000")) // default reflection fallback
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-                return sum.compareTo(BigDecimal.ZERO) > 0 ? sum : plan.getManualCurrentSavings();
+                var dashboard = portfolioAnalyticsService.getDashboard(plan.getUserId());
+                BigDecimal sum = dashboard.getPresentValue();
+                return sum != null && sum.compareTo(BigDecimal.ZERO) > 0 ? sum : plan.getManualCurrentSavings();
             } catch (Exception e) {
                 return plan.getManualCurrentSavings() != null ? plan.getManualCurrentSavings() : BigDecimal.ZERO;
             }
@@ -352,6 +352,19 @@ public class FirePlannerService {
 
     private FirePlan getOrCreatePlan(String userId) {
         return firePlanRepository.findByUserId(userId).orElseGet(() -> {
+            BigDecimal annualExpenses = new BigDecimal("1200000.0000");
+            if (expenseService != null) {
+                try {
+                    var summary = expenseService.getExpenseSummaryContract(userId, null);
+                    if (summary != null && summary.getTrailing12MonthAnnualSpend() != null
+                            && summary.getTrailing12MonthAnnualSpend().compareTo(BigDecimal.ZERO) > 0) {
+                        annualExpenses = summary.getTrailing12MonthAnnualSpend().setScale(4, RoundingMode.HALF_UP);
+                    }
+                } catch (Exception e) {
+                    log.debug("Could not auto-populate annual expenses from ExpenseService: {}", e.getMessage());
+                }
+            }
+
             FirePlan p = FirePlan.builder()
                 .userId(userId)
                 .currentSavingsSource(FireSavingsSource.MANUAL)
@@ -361,7 +374,7 @@ public class FirePlannerService {
                 .monthlySavings(new BigDecimal("50000.0000"))
                 .expectedAnnualReturnPct(new BigDecimal("12.00"))
                 .postRetirementReturnPct(new BigDecimal("8.00"))
-                .annualExpensesInRetirement(new BigDecimal("1200000.0000"))
+                .annualExpensesInRetirement(annualExpenses)
                 .safeWithdrawalRatePct(new BigDecimal("4.00"))
                 .expectedAnnualInflationPct(new BigDecimal("6.00"))
                 .activeMode(FireCalculationMode.YEARS_TO_FIRE)

@@ -185,7 +185,7 @@ export const VaultSetupModal: React.FC<VaultSetupModalProps> = ({ isOpen, onSetu
                 <button
                   type="submit"
                   disabled={isSubmitting || password.length < 8 || password !== confirmPassword}
-                  className="px-4 py-2 text-xs font-bold text-white bg-[#1C1917] hover:bg-[#342D27] rounded-md transition-colors shadow-xs disabled:opacity-50"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-[#B88728] hover:bg-[#a67520] rounded-md transition-colors shadow-xs disabled:opacity-50"
                 >
                   {isSubmitting ? 'Securing Vault...' : 'Create Vault & Generate Codes'}
                 </button>
@@ -244,7 +244,7 @@ export const VaultSetupModal: React.FC<VaultSetupModalProps> = ({ isOpen, onSetu
                 <button
                   type="button"
                   onClick={handleFinishSetup}
-                  className="px-4 py-2 text-xs font-bold text-white bg-[#1C1917] hover:bg-[#342D27] rounded-md transition-colors shadow-xs"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-[#B88728] hover:bg-[#a67520] rounded-md transition-colors shadow-xs"
                 >
                   I Have Saved My Codes Offline
                 </button>
